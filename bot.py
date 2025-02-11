@@ -6,6 +6,7 @@ from firebase_admin import credentials, firestore
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from fastapi import FastAPI
+from transformers import pipeline  # Hugging Face AI Model
 
 # Load Firebase credentials from Base64 environment variable
 firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
@@ -29,6 +30,9 @@ if not TELEGRAM_BOT_TOKEN:
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 app = FastAPI()
+
+# 🔹 Load AI Model for Diet Advice
+diet_ai = pipeline("text-generation", model="mistralai/Mistral-7B-Instruct")
 
 @app.get("/")
 async def home():
@@ -83,6 +87,18 @@ async def log_weight(message: types.Message):
     except ValueError:
         await message.answer("Invalid weight. Please enter a number.")
 
+# 🔹 AI Diet Advice Command
+@dp.message(Command("advice"))
+async def get_advice(message: types.Message):
+    user_input = message.text.replace("/advice", "").strip()
+
+    if not user_input:
+        user_input = "Give me a healthy keto meal plan for today."
+
+    response = diet_ai(user_input, max_length=100, do_sample=True)
+    diet_tip = response[0]['generated_text']
+    
+    await message.answer(f"🧠 AI Advice: {diet_tip}")
 
 async def main():
     await dp.start_polling(bot)

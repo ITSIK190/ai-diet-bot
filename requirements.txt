@@ -2,3 +2,7 @@ aiogram
 fastapi
 uvicorn
 firebase-admin
+torch
+transformers
+optimum
+sentencepiece
