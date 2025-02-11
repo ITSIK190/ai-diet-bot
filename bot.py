@@ -7,6 +7,15 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from fastapi import FastAPI
 from transformers import pipeline  # Hugging Face AI Model
+from huggingface_hub import login  # Import login function for authentication
+
+# Hugging Face authentication
+HF_TOKEN = "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" # Store your token as an environment variable
+if HF_TOKEN:
+    login(HF_TOKEN)
+else:
+    raise ValueError("HUGGINGFACE_TOKEN is not set! Please add your Hugging Face token.")
+
 
 # Load Firebase credentials from Base64 environment variable
 firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
