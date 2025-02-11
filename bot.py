@@ -32,7 +32,7 @@ dp = Dispatcher()
 app = FastAPI()
 
 # 🔹 Load AI Model for Diet Advice
-diet_ai = pipeline("text-generation", model="mistralai/Mistral-7B-Instruct")
+diet_ai = pipeline("text-generation", model="mistralai/Mistral-7B-Instruct-v0.3")
 
 @app.get("/")
 async def home():
