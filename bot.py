@@ -43,11 +43,46 @@ async def start(message: types.Message):
     user = user_ref.get()
 
     if user.exists:
-        await message.answer("Welcome back! How’s your diet going?")
+        user_data = user.to_dict()
+        weight = user_data.get("weight", "Unknown")
+        goal = user_data.get("goal", "Not set")
+        await message.answer(f"Welcome back!\nYour last recorded weight: {weight} kg\nYour goal: {goal}")
     else:
-        # New user, ask for weight
         await message.answer("Welcome! Please enter your weight (kg):")
         user_ref.set({"user_id": user_id})  # Create user entry
+
+@dp.message(Command("setgoal"))
+async def set_goal(message: types.Message):
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+    
+    if len(parts) < 2:
+        await message.answer("Please enter your goal weight. Example: /setgoal 75")
+        return
+
+    try:
+        goal_weight = float(parts[1])
+        db.collection("users").document(user_id).update({"goal": goal_weight})
+        await message.answer(f"Goal weight set to {goal_weight} kg! Keep going! 💪")
+    except ValueError:
+        await message.answer("Invalid weight. Please enter a number.")
+
+@dp.message(Command("logweight"))
+async def log_weight(message: types.Message):
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("Please enter your weight. Example: /logweight 82.5")
+        return
+
+    try:
+        weight = float(parts[1])
+        db.collection("users").document(user_id).update({"weight": weight})
+        await message.answer(f"Got it! Your weight is now recorded as {weight} kg. 🎯")
+    except ValueError:
+        await message.answer("Invalid weight. Please enter a number.")
+
 
 async def main():
     await dp.start_polling(bot)
