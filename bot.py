@@ -19,7 +19,10 @@ openai.api_key = os.getenv("GROQ_API_KEY")
 
 # Function to interact with the LLM
 def chat_with_groq(prompt):
-    client = openai.OpenAI()
+    client = openai.OpenAI(
+        api_key=os.getenv("GROQ_API_KEY"),  # Explicitly set API key
+        base_url="https://api.groq.com/openai/v1"  # Explicitly set base URL
+    )
     response = client.chat.completions.create(
         model="mixtral",
         messages=[{"role": "user", "content": prompt}]
