@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import json
 import base64
@@ -47,13 +49,13 @@ dp = Dispatcher()
 app = FastAPI()
 
 # Hebrew translations
-WELCOME_BACK = "ברוך שובך, {name}!\nהמשקל האחרון שלך: {weight} ק"ג\nהמטרה שלך: {goal} ק"ג"
-WELCOME_NEW = "ברוך הבא, {name}! אנא הזן את המשקל שלך (בק"ג):"
-GOAL_SET = "המטרה שלך נקבעה ל-{goal} ק"ג! המשך כך! 💪"
-WEIGHT_LOGGED = "קיבלתי! המשקל שלך נרשם כ-{weight} ק"ג. 🎯"
-INVALID_WEIGHT = "משקל לא תקין. אנא הזן מספר."
-ADVICE_PREFIX = "🧠 עצת AI: "
-ENCOURAGEMENT = "{name}, אתה עושה עבודה נהדרת! המשך לשמור על היעדים שלך! 🎯"
+WELCOME_BACK = r"ברוך שובך, {name}!\nהמשקל האחרון שלך: {weight} ק\"ג\nהמטרה שלך: {goal} ק\"ג"
+WELCOME_NEW = r"ברוך הבא, {name}! אנא הזן את המשקל שלך (בק\"ג):"
+GOAL_SET = r"המטרה שלך נקבעה ל-{goal} ק\"ג! המשך כך! 💪"
+WEIGHT_LOGGED = r"קיבלתי! המשקל שלך נרשם כ-{weight} ק\"ג. 🎯"
+INVALID_WEIGHT = r"משקל לא תקין. אנא הזן מספר."
+ADVICE_PREFIX = r"🧠 עצת AI: "
+ENCOURAGEMENT = r"{name}, אתה עושה עבודה נהדרת! המשך לשמור על היעדים שלך! 🎯"
 
 @app.get("/")
 async def home():
