@@ -5,13 +5,13 @@ import json
 import base64
 import firebase_admin
 import openai
-import groq
 import asyncio
+import pytz
 from firebase_admin import credentials, firestore
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from fastapi import FastAPI
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Set Groq API Base & Key
 openai.api_base = "https://api.groq.com/openai/v1"
@@ -20,15 +20,14 @@ openai.api_key = os.getenv("GROQ_API_KEY")
 # Function to interact with the LLM
 def chat_with_groq(prompt):
     client = openai.OpenAI(
-        api_key=os.getenv("GROQ_API_KEY"),  # Explicitly set API key
-        base_url="https://api.groq.com/openai/v1"  # Explicitly set base URL
+        api_key=os.getenv("GROQ_API_KEY"),
+        base_url="https://api.groq.com/openai/v1"
     )
     response = client.chat.completions.create(
         model="mixtral-8x7b-32768",
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
-
 
 # Load Firebase credentials from Base64 environment variable
 firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
@@ -53,6 +52,14 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 app = FastAPI()
 
+# Scheduled Messages Dictionary
+SCHEDULED_MESSAGES = {
+    "08:00": "☕ עשה לעצמך קפה, שיהיה לך יום טוב ותהיה חזק!",
+    "11:00": "🍽️ רק עוד שעה אחת עד לארוחת הצהריים.",
+    "12:00": "🍲 בתיאבון!",
+    "18:00": "🥗 התחל להכין ארוחת ערב והתכונן לצום."
+}
+
 # Hebrew translations
 WELCOME_BACK = r"ברוך שובך, {name}!\nהמשקל האחרון שלך: {weight} ק\"ג\nהמטרה שלך: {goal} ק\"ג"
 WELCOME_NEW = r"ברוך הבא, {name}! אנא הזן את המשקל שלך (בק\"ג):"
@@ -70,8 +77,6 @@ async def home():
 async def start(message: types.Message):
     user_id = str(message.from_user.id)
     user_name = message.from_user.first_name
-    
-    # Check if user exists in Firebase
     user_ref = db.collection("users").document(user_id)
     user = user_ref.get()
 
@@ -82,17 +87,15 @@ async def start(message: types.Message):
         await message.answer(WELCOME_BACK.format(name=user_name, weight=weight, goal=goal))
     else:
         await message.answer(WELCOME_NEW.format(name=user_name))
-        user_ref.set({"user_id": user_id, "name": user_name})  # Create user entry
+        user_ref.set({"user_id": user_id, "name": user_name})
 
 @dp.message(Command("setgoal"))
 async def set_goal(message: types.Message):
     user_id = str(message.from_user.id)
     parts = message.text.split()
-    
     if len(parts) < 2:
         await message.answer("אנא הזן את משקל היעד שלך. דוגמא: /setgoal 75")
         return
-
     try:
         goal_weight = float(parts[1])
         db.collection("users").document(user_id).update({"goal": goal_weight})
@@ -104,11 +107,9 @@ async def set_goal(message: types.Message):
 async def log_weight(message: types.Message):
     user_id = str(message.from_user.id)
     parts = message.text.split()
-
     if len(parts) < 2:
         await message.answer("אנא הזן את המשקל שלך. דוגמא: /logweight 82.5")
         return
-
     try:
         weight = float(parts[1])
         db.collection("users").document(user_id).update({"weight": weight})
@@ -121,22 +122,22 @@ async def get_advice(message: types.Message):
     user_input = message.text.replace("/advice", "").strip()
     if not user_input:
         user_input = "תן לי תפריט קטוגני בריא להיום."
-
     response = chat_with_groq(user_input)
     await message.answer(ADVICE_PREFIX + response)
 
-async def send_encouragements():
+async def send_scheduled_messages():
+    timezone = pytz.timezone("Asia/Jerusalem")
     while True:
-        users = db.collection("users").stream()
-        for user in users:
-            user_data = user.to_dict()
-            name = user_data.get("name", "חבר")
-            user_id = user.id
-            await bot.send_message(user_id, ENCOURAGEMENT.format(name=name))
-        await asyncio.sleep(14400)  # 4 hours
+        now = datetime.now(timezone).strftime("%H:%M")
+        if now in SCHEDULED_MESSAGES:
+            users = db.collection("users").stream()
+            for user in users:
+                user_id = user.id
+                await bot.send_message(user_id, SCHEDULED_MESSAGES[now])
+        await asyncio.sleep(60)  # Check every minute
 
 async def main():
-    asyncio.create_task(send_encouragements())
+    asyncio.create_task(send_scheduled_messages())
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
