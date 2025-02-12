@@ -24,7 +24,7 @@ def chat_with_groq(prompt):
         base_url="https://api.groq.com/openai/v1"  # Explicitly set base URL
     )
     response = client.chat.completions.create(
-        model="mixtral-8x7b",
+        model="mixtral-8x7b-32768",
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
