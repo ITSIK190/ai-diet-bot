@@ -19,11 +19,13 @@ openai.api_key = os.getenv("GROQ_API_KEY")
 
 # Function to interact with the LLM
 def chat_with_groq(prompt):
-    response = openai.ChatCompletion.create(
+    client = openai.OpenAI()
+    response = client.chat.completions.create(
         model="mixtral",
         messages=[{"role": "user", "content": prompt}]
     )
-    return response["choices"][0]["message"]["content"]
+    return response.choices[0].message.content
+
 
 # Load Firebase credentials from Base64 environment variable
 firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
