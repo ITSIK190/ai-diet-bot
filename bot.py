@@ -2,22 +2,25 @@ import os
 import json
 import base64
 import firebase_admin
+import groq
 from firebase_admin import credentials, firestore
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from fastapi import FastAPI
-from transformers import pipeline  # Hugging Face AI Model
-from huggingface_hub import login  # Import login function for authentication
 
-# Hugging Face authentication
-HF_TOKEN = "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" # Store your token as an environment variable
-if HF_TOKEN:
-    login(HF_TOKEN)
-else:
-    raise ValueError("HUGGINGFACE_TOKEN is not set! Please add your Hugging Face token.")
+# 🔹 Load API keys from environment variables
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY is not set!")
+if not TELEGRAM_BOT_TOKEN:
+    raise ValueError("TELEGRAM_BOT_TOKEN is not set!")
 
-# Load Firebase credentials from Base64 environment variable
+# 🔹 Initialize Groq client
+client = groq.Client(api_key=GROQ_API_KEY)
+
+# 🔹 Load Firebase credentials from Base64 environment variable
 firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
 if firebase_credentials_b64:
     firebase_credentials_json = base64.b64decode(firebase_credentials_b64).decode("utf-8")
@@ -25,33 +28,24 @@ if firebase_credentials_b64:
 else:
     raise ValueError("FIREBASE_CREDENTIALS is not set or invalid.")
 
-# Initialize Firebase
+# 🔹 Initialize Firebase
 cred = credentials.Certificate(firebase_credentials)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# Load Telegram bot token from environment variable
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-if not TELEGRAM_BOT_TOKEN:
-    raise ValueError("TELEGRAM_BOT_TOKEN is not set!")
-
-# Initialize bot and dispatcher
+# 🔹 Initialize Telegram bot & FastAPI
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 app = FastAPI()
-
-# 🔹 Load AI Model for Diet Advice
-diet_ai = pipeline("text-generation", model="mistralai/Mistral-7B-v0.1")
 
 @app.get("/")
 async def home():
     return {"message": "AI Dietitian Bot is running!"}
 
+# 🔹 Telegram Bot Commands
 @dp.message(Command("start"))
 async def start(message: types.Message):
     user_id = str(message.from_user.id)
-    
-    # Check if user exists in Firebase
     user_ref = db.collection("users").document(user_id)
     user = user_ref.get()
 
@@ -100,15 +94,22 @@ async def log_weight(message: types.Message):
 @dp.message(Command("advice"))
 async def get_advice(message: types.Message):
     user_input = message.text.replace("/advice", "").strip()
-
+    
     if not user_input:
         user_input = "Give me a healthy keto meal plan for today."
 
-    response = diet_ai(user_input, max_length=100, do_sample=True)
-    diet_tip = response[0]['generated_text']
-    
+    response = client.chat.completions.create(
+        model="llama3-8b-8192",
+        messages=[
+            {"role": "system", "content": "You are a diet assistant. Provide helpful and healthy meal suggestions."},
+            {"role": "user", "content": user_input}
+        ]
+    )
+
+    diet_tip = response.choices[0].message.content  # Extract the generated response
     await message.answer(f"🧠 AI Advice: {diet_tip}")
 
+# 🔹 Start the bot
 async def main():
     await dp.start_polling(bot)
 
