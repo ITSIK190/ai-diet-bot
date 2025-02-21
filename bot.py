@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-
 import os
 import json
 import base64
 import firebase_admin
-import openai
 import asyncio
 import pytz
 from firebase_admin import credentials, firestore
@@ -12,22 +10,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from fastapi import FastAPI
 from datetime import datetime
-
-# Set Groq API Base & Key
-openai.api_base = "https://api.groq.com/openai/v1"
-openai.api_key = os.getenv("GROQ_API_KEY")
-
-# Function to interact with the LLM
-def chat_with_groq(prompt):
-    client = openai.OpenAI(
-        api_key=os.getenv("GROQ_API_KEY"),
-        base_url="https://api.groq.com/openai/v1"
-    )
-    response = client.chat.completions.create(
-        model="mixtral-8x7b-32768",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
+from gradio_client import Client
 
 # Load Firebase credentials from Base64 environment variable
 firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
@@ -52,6 +35,10 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 app = FastAPI()
 
+# Initialize Gradio Client
+HF_SPACE_NAME = "Itsik190/ai-diet-coach"
+client = Client(HF_SPACE_NAME)
+
 # Scheduled Messages Dictionary
 SCHEDULED_MESSAGES = {
     "08:00": "☕ עשה לעצמך קפה, שיהיה לך יום טוב ותהיה חזק!",
@@ -72,6 +59,18 @@ ENCOURAGEMENT = r"{name}, אתה עושה עבודה נהדרת! המשך לשמ
 @app.get("/")
 async def home():
     return {"message": "AI Dietitian Bot is running!"}
+
+def chat_with_ai(prompt):
+    """Send user message to Hugging Face model and return response."""
+    try:
+        response = client.predict(
+            message=prompt,
+            api_name="/chat"
+        )
+        return response
+    except Exception as e:
+        print("Error:", e)
+        return "מצטער, יש תקלה! נסה שוב מאוחר יותר."
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
@@ -122,7 +121,7 @@ async def get_advice(message: types.Message):
     user_input = message.text.replace("/advice", "").strip()
     if not user_input:
         user_input = "תן לי תפריט קטוגני בריא להיום."
-    response = chat_with_groq(user_input)
+    response = chat_with_ai(user_input)
     await message.answer(ADVICE_PREFIX + response)
 
 async def send_scheduled_messages():

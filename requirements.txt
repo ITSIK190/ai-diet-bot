@@ -2,6 +2,5 @@ aiogram
 fastapi
 uvicorn
 firebase-admin
-groq
 openai
 pytz
