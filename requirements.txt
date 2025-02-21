@@ -4,3 +4,4 @@ uvicorn
 firebase-admin
 openai
 pytz
+gradio_client
