@@ -41,20 +41,20 @@ client = Client(HF_SPACE_NAME)
 
 # Scheduled Messages Dictionary
 SCHEDULED_MESSAGES = {
-    "08:00": "☕ עשה לעצמך קפה, שיהיה לך יום טוב ותהיה חזק!",
-    "11:00": "🍽️ רק עוד שעה אחת עד לארוחת הצהריים.",
-    "12:00": "🍲 בתיאבון!",
-    "18:00": "🥗 התחל להכין ארוחת ערב והתכונן לצום."
+    "08:00": "☕ Make yourself a coffee, have a great day, and stay strong!",
+    # "11:00": "🍽️ Just one more hour until lunch.",
+    # "12:00": "🍲 Enjoy your meal!",
+    # "18:00": "🥗 Start preparing dinner and get ready for the fast."
 }
 
-# Hebrew translations
-WELCOME_BACK = r"ברוך שובך, {name}!\nהמשקל האחרון שלך: {weight} ק\"ג\nהמטרה שלך: {goal} ק\"ג"
-WELCOME_NEW = r"ברוך הבא, {name}! אנא הזן את המשקל שלך (בק\"ג):"
-GOAL_SET = r"המטרה שלך נקבעה ל-{goal} ק\"ג! המשך כך! 💪"
-WEIGHT_LOGGED = r"קיבלתי! המשקל שלך נרשם כ-{weight} ק\"ג. 🎯"
-INVALID_WEIGHT = r"משקל לא תקין. אנא הזן מספר."
-ADVICE_PREFIX = r"🧠 עצת AI: "
-ENCOURAGEMENT = r"{name}, אתה עושה עבודה נהדרת! המשך לשמור על היעדים שלך! 🎯"
+# English Translations
+WELCOME_BACK = "Welcome back, {name}!\nYour last recorded weight: {weight} kg\nYour goal: {goal} kg"
+WELCOME_NEW = "Welcome, {name}! Please enter your weight (in kg):"
+GOAL_SET = "Your goal is now set to {goal} kg! Keep up the great work! 💪"
+WEIGHT_LOGGED = "Got it! Your weight has been logged as {weight} kg. 🎯"
+INVALID_WEIGHT = "Invalid weight. Please enter a number."
+ADVICE_PREFIX = "🧠 AI Advice: "
+ENCOURAGEMENT = "{name}, you're doing great! Keep pushing towards your goals! 🎯"
 
 @app.get("/")
 async def home():
@@ -70,7 +70,7 @@ def chat_with_ai(prompt):
         return response
     except Exception as e:
         print("Error:", e)
-        return "מצטער, יש תקלה! נסה שוב מאוחר יותר."
+        return "Sorry, something went wrong! Please try again later."
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
@@ -81,8 +81,8 @@ async def start(message: types.Message):
 
     if user.exists:
         user_data = user.to_dict()
-        weight = user_data.get("weight", "לא ידוע")
-        goal = user_data.get("goal", "לא נקבע")
+        weight = user_data.get("weight", "Unknown")
+        goal = user_data.get("goal", "Not set")
         await message.answer(WELCOME_BACK.format(name=user_name, weight=weight, goal=goal))
     else:
         await message.answer(WELCOME_NEW.format(name=user_name))
@@ -93,7 +93,7 @@ async def set_goal(message: types.Message):
     user_id = str(message.from_user.id)
     parts = message.text.split()
     if len(parts) < 2:
-        await message.answer("אנא הזן את משקל היעד שלך. דוגמא: /setgoal 75")
+        await message.answer("Please enter your target weight. Example: /setgoal 75")
         return
     try:
         goal_weight = float(parts[1])
@@ -107,7 +107,7 @@ async def log_weight(message: types.Message):
     user_id = str(message.from_user.id)
     parts = message.text.split()
     if len(parts) < 2:
-        await message.answer("אנא הזן את המשקל שלך. דוגמא: /logweight 82.5")
+        await message.answer("Please enter your current weight. Example: /logweight 82.5")
         return
     try:
         weight = float(parts[1])
@@ -120,7 +120,7 @@ async def log_weight(message: types.Message):
 async def get_advice(message: types.Message):
     user_input = message.text.replace("/advice", "").strip()
     if not user_input:
-        user_input = "תן לי תפריט קטוגני בריא להיום."
+        user_input = "Give me a healthy ketogenic meal plan for today."
     response = chat_with_ai(user_input)
     await message.answer(ADVICE_PREFIX + response)
 
