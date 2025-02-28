@@ -183,15 +183,25 @@ async def send_scheduled_messages():
 
 @dp.message()
 async def handle_chat(message: types.Message):
-    """Handle free-text messages, excluding commands."""
     user_input = message.text.strip()
 
-    # If message starts with "/", ignore it (it’s a command)
+    # Ignore commands
     if user_input.startswith("/"):
         return  
 
-    # Otherwise, process it as chat
-    response = chat_with_ai(user_input)
+    user_id = str(message.from_user.id)
+    user_ref = db.collection("users").document(user_id)
+    user = user_ref.get()
+
+    user_name = message.from_user.first_name  # Default to Telegram name
+    if user.exists:
+        user_data = user.to_dict()
+        user_name = user_data.get("name", user_name)  # Use saved name if available
+
+    # Personalize the AI prompt
+    prompt = f"You are {user_name}'s personal AI dietitian. Always refer to them by name and give responses as their supportive dietitian. User message: {user_input}"
+
+    response = chat_with_ai(prompt)
     await message.answer(response)
 
 
