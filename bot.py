@@ -180,26 +180,125 @@ async def send_scheduled_messages():
                 await bot.send_message(user_id, response)
 
         await asyncio.sleep(60)  # Check every minute
+@dp.message(Command("setdiet"))
+async def set_diet(message: types.Message):
+    """Set user's diet type."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split(maxsplit=1)
+
+    if len(parts) < 2:
+        await message.answer("Please specify your diet type. Example: /setdiet keto")
+        return
+
+    diet_type = parts[1].strip().capitalize()
+
+    allowed_diets = ["Keto", "Low-Carb", "Mediterranean", "Vegetarian", "Vegan", "Paleo", "Carnivore", "Standard", "Other"]
+
+    if diet_type not in allowed_diets:
+        await message.answer(f"Invalid diet type. Choose from: {', '.join(allowed_diets)}")
+        return
+
+    db.collection("users").document(user_id).update({"diet": diet_type})
+    await message.answer(f"Your diet type is set to {diet_type} ✅")
+
+
+@dp.message(Command("setfasting"))
+async def set_fasting(message: types.Message):
+    """Enable/disable intermittent fasting and set eating window."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("Usage: /setfasting <yes/no> [start_time] [stop_time]\nExample: /setfasting yes 12:00 20:00")
+        return
+
+    fasting_status = parts[1].lower()
+
+    if fasting_status not in ["yes", "no"]:
+        await message.answer("Please enter 'yes' to enable fasting or 'no' to disable it.")
+        return
+
+    fasting_enabled = fasting_status == "yes"
+    eating_window = None
+
+    if fasting_enabled:
+        if len(parts) < 4:
+            await message.answer("Please specify start and stop time. Example: /setfasting yes 12:00 20:00")
+            return
+
+        start_time, stop_time = parts[2], parts[3]
+
+        try:
+            datetime.strptime(start_time, "%H:%M")
+            datetime.strptime(stop_time, "%H:%M")
+        except ValueError:
+            await message.answer("Invalid time format. Use HH:MM (24-hour format). Example: 12:00 20:00")
+            return
+
+        eating_window = {"start": start_time, "stop": stop_time}
+
+    db.collection("users").document(user_id).update({"fasting": fasting_enabled, "eating_window": eating_window})
+    
+    if fasting_enabled:
+        await message.answer(f"Intermittent fasting enabled ✅\nEating window: {start_time} - {stop_time}")
+    else:
+        await message.answer("Intermittent fasting disabled ❌")
+
+
+@dp.message(Command("setmeals"))
+async def set_meals(message: types.Message):
+    """Set number of meals per day."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("Please enter the number of meals per day. Example: /setmeals 2")
+        return
+
+    try:
+        meals_per_day = int(parts[1])
+        if meals_per_day < 1 or meals_per_day > 6:
+            raise ValueError
+    except ValueError:
+        await message.answer("Invalid number. Enter a value between 1 and 6.")
+        return
+
+    db.collection("users").document(user_id).update({"meals_per_day": meals_per_day})
+    await message.answer(f"Your meals per day is set to {meals_per_day} 🍽️")
+
 
 @dp.message()
 async def handle_chat(message: types.Message):
+    """Handles normal chat messages with AI, personalizing responses based on user data."""
     user_input = message.text.strip()
 
-    # Ignore commands
     if user_input.startswith("/"):
-        return  
+        return  # Ignore commands
 
     user_id = str(message.from_user.id)
     user_ref = db.collection("users").document(user_id)
     user = user_ref.get()
 
     user_name = message.from_user.first_name  # Default to Telegram name
+    diet = "unknown"
+    fasting = "not specified"
+    meals = "unknown"
+    eating_window = ""
+
     if user.exists:
         user_data = user.to_dict()
-        user_name = user_data.get("name", user_name)  # Use saved name if available
+        user_name = user_data.get("name", user_name)  
+        diet = user_data.get("diet", "unknown")
+        fasting = "enabled" if user_data.get("fasting") else "disabled"
+        meals = user_data.get("meals_per_day", "unknown")
+        if user_data.get("fasting") and user_data.get("eating_window"):
+            eating_window = f"Eating window: {user_data['eating_window']['start']} - {user_data['eating_window']['stop']}"
 
-    # Personalize the AI prompt
-    prompt = f"You are {user_name}'s personal AI dietitian. Always refer to them by name and give responses as their supportive dietitian, Keep response under 20 words. User message: {user_input}"
+    prompt = (
+        f"You are {user_name}'s personal AI dietitian. "
+        f"They follow a {diet} diet, intermittent fasting is {fasting}, and they eat {meals} meals per day. {eating_window} "
+        f"User message: {user_input}"
+    )
 
     response = chat_with_ai(prompt)
     await message.answer(response)
