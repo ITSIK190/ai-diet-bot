@@ -199,7 +199,7 @@ async def handle_chat(message: types.Message):
         user_name = user_data.get("name", user_name)  # Use saved name if available
 
     # Personalize the AI prompt
-    prompt = f"You are {user_name}'s personal AI dietitian. Always refer to them by name and give responses as their supportive dietitian. User message: {user_input}"
+    prompt = f"You are {user_name}'s personal AI dietitian. Always refer to them by name and give responses as their supportive dietitian, Keep response under 20 words. User message: {user_input}"
 
     response = chat_with_ai(prompt)
     await message.answer(response)
