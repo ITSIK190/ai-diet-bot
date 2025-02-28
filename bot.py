@@ -259,16 +259,10 @@ def truncate_text(text, max_words=50):
     words = text.split()
     return " ".join(words[:max_words]) if len(words) > max_words else text
 
-def chat_with_ai(user_message, user_name, diet, fasting, meals, eating_window):
+def chat_with_ai(prompt):
     """Send user message to Hugging Face model and return response."""
     try:
-        # Construct full prompt with user details
-        prompt = (
-            f"You are {user_name}'s AI nutrition assistant. "
-            f"They follow a {diet} diet, intermittent fasting is {fasting}, and they eat {meals} meals per day. {eating_window} "
-            f"Avoid meal planning. Instead, provide general guidance and advice related to their question. "
-            f"Please keep responses under 30 words. User message: {user_message}"
-        )
+
 
         print(f"Sending to HF: {prompt}")  # Debug log
         
@@ -317,7 +311,14 @@ async def handle_chat(message: types.Message):
         if user_data.get("fasting") and user_data.get("eating_window"):
             eating_window = f"Eating window: {user_data['eating_window']['start']} - {user_data['eating_window']['stop']}"
 
-    response = chat_with_ai(user_input, user_name, diet, fasting, meals, eating_window)
+        # Construct full prompt with user details
+        prompt = (
+            f"You are {user_name}'s AI nutrition assistant. "
+            f"They follow a {diet} diet, intermittent fasting is {fasting}, and they eat {meals} meals per day. {eating_window} "
+            f"Avoid meal planning. Instead, provide general guidance and advice related to their question. "
+            f"Please keep responses under 30 words. User message: {user_input}"
+        )
+    response = chat_with_ai(prompt)
 
     if response:
         await send_message_with_split(message.chat.id, response)
