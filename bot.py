@@ -76,13 +76,6 @@ def chat_with_ai(prompt):
 
 
 
-# @dp.message()
-# async def handle_chat(message: types.Message):
-#     """Handles regular chat messages and sends them to the AI model."""
-#     user_input = message.text.strip()
-#     if user_input:  # Ensure message is not empty
-#         response = chat_with_ai(user_input)
-#         await message.answer(response)
 
 
 @dp.message(Command("start"))
@@ -137,19 +130,15 @@ async def get_advice(message: types.Message):
     response = chat_with_ai(user_input)
     await message.answer(ADVICE_PREFIX + response)
 
-@dp.message(Command("s"))
-async def short_encouragement(message: types.Message):
+async def generate_encouragement(user_id, user_name):
     """Generates a short AI-based encouragement message using stored user data."""
-    user_id = str(message.from_user.id)
     user_ref = db.collection("users").document(user_id)
     user = user_ref.get()
 
     if not user.exists:
-        await message.answer("I don’t have your details yet! Please log your weight with /logweight.")
-        return
-    
+        return "I don’t have your details yet! Please log your weight with /logweight."
+
     user_data = user.to_dict()
-    user_name = user_data.get("name", message.from_user.first_name)  # Use Telegram name if missing
     weight = user_data.get("weight")
     goal_weight = user_data.get("goal")
 
@@ -163,23 +152,33 @@ async def short_encouragement(message: types.Message):
     else:
         prompt = f"Give {user_name} a short, highly motivating message about staying healthy and fit. Keep it under 20 words."
 
-    # Get response from AI
-    response = chat_with_ai(prompt)
+    return chat_with_ai(prompt)
 
-    # Send response to user
+
+@dp.message(Command("m"))
+async def short_encouragement(message: types.Message):
+    """Handles /m command to send motivation."""
+    user_id = str(message.from_user.id)
+    user_name = message.from_user.first_name  # Use Telegram first name
+    response = await generate_encouragement(user_id, user_name)
     await message.answer(response)
-
 
 
 async def send_scheduled_messages():
     timezone = pytz.timezone("Asia/Jerusalem")
     while True:
         now = datetime.now(timezone).strftime("%H:%M")
-        if now in SCHEDULED_MESSAGES:
+
+        if now == "08:00":
             users = db.collection("users").stream()
             for user in users:
                 user_id = user.id
-                await bot.send_message(user_id, SCHEDULED_MESSAGES[now])
+                user_data = user.to_dict()
+                user_name = user_data.get("name", "Friend")
+
+                response = await generate_encouragement(user_id, user_name)
+                await bot.send_message(user_id, response)
+
         await asyncio.sleep(60)  # Check every minute
 
 @dp.message()
