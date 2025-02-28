@@ -137,6 +137,37 @@ async def get_advice(message: types.Message):
     response = chat_with_ai(user_input)
     await message.answer(ADVICE_PREFIX + response)
 
+@dp.message(Command("s"))
+async def short_encouragement(message: types.Message):
+    """Generates a short AI-based encouragement message using stored user data."""
+    user_id = str(message.from_user.id)
+    user_ref = db.collection("users").document(user_id)
+    user = user_ref.get()
+
+    if not user.exists:
+        await message.answer("I don’t have your details yet! Please log your weight with /logweight.")
+        return
+    
+    user_data = user.to_dict()
+    user_name = user_data.get("name", "Friend")  # Default to 'Friend' if name is missing
+    weight = user_data.get("weight", None)
+    goal_weight = user_data.get("goal", None)
+
+    # Create a context message for AI
+    prompt = f"Give {user_name} a short, motivating message. "
+    if weight:
+        prompt += f"Their current weight is {weight} kg. "
+    if goal_weight:
+        prompt += f"Their goal is {goal_weight} kg. "
+    prompt += "Make it positive and inspiring!"
+
+    # Get response from AI
+    response = chat_with_ai(prompt)
+
+    # Send response to user
+    await message.answer(response)
+
+
 async def send_scheduled_messages():
     timezone = pytz.timezone("Asia/Jerusalem")
     while True:
