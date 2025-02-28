@@ -63,16 +63,17 @@ async def home():
 def chat_with_ai(prompt):
     """Send user message to Hugging Face model and return response."""
     try:
-        print(f"Sending to HF: {prompt}")  # Debugging log
+        print(f"Sending to HF: {prompt}")  # Debug log
         response = client.predict(
-            prompt,  # Ensure the correct input format
-            api_name="/predict"  # Verify this matches your HF Space API
+            message=prompt,  # Ensure correct format
+            api_name="/chat"  # Use the same endpoint as /advice
         )
-        print(f"HF Response: {response}")  # Debugging log
+        print(f"HF Response: {response}")  # Debug log
         return response
     except Exception as e:
         print("Error:", e)
         return "Sorry, something went wrong! Please try again later."
+
 
 
 @dp.message()
