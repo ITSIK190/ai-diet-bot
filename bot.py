@@ -76,13 +76,13 @@ def chat_with_ai(prompt):
 
 
 
-@dp.message()
-async def handle_chat(message: types.Message):
-    """Handles regular chat messages and sends them to the AI model."""
-    user_input = message.text.strip()
-    if user_input:  # Ensure message is not empty
-        response = chat_with_ai(user_input)
-        await message.answer(response)
+# @dp.message()
+# async def handle_chat(message: types.Message):
+#     """Handles regular chat messages and sends them to the AI model."""
+#     user_input = message.text.strip()
+#     if user_input:  # Ensure message is not empty
+#         response = chat_with_ai(user_input)
+#         await message.answer(response)
 
 
 @dp.message(Command("start"))
