@@ -39,14 +39,6 @@ app = FastAPI()
 HF_SPACE_NAME = "Itsik190/ai-diet-coach"
 client = Client(HF_SPACE_NAME)
 
-# Scheduled Messages Dictionary
-SCHEDULED_MESSAGES = {
-    "08:00": "☕ Make yourself a coffee, have a great day, and stay strong!",
-    # "11:00": "🍽️ Just one more hour until lunch.",
-    # "12:00": "🍲 Enjoy your meal!",
-    # "18:00": "🥗 Start preparing dinner and get ready for the fast."
-}
-
 # English Translations
 WELCOME_BACK = "Welcome back, {name}!\nYour last recorded weight: {weight} kg\nYour goal: {goal} kg"
 WELCOME_NEW = "Welcome, {name}! Please enter your weight (in kg):"
@@ -297,7 +289,7 @@ def chat_with_ai(user_message, user_name, diet, fasting, meals, eating_window):
     except Exception as e:
         print(f"Error communicating with HF: {e}")
         return "Sorry, something went wrong! Please try again later."
-
+        
 @dp.message()
 async def handle_chat(message: types.Message):
     """Handles normal chat messages with AI, ensuring full messages are sent."""
@@ -325,17 +317,7 @@ async def handle_chat(message: types.Message):
         if user_data.get("fasting") and user_data.get("eating_window"):
             eating_window = f"Eating window: {user_data['eating_window']['start']} - {user_data['eating_window']['stop']}"
 
-    truncated_user_input = truncate_text(user_input, max_words=50)  # Ensure user input is within 50 words
-
-    prompt = (
-        f"You are Isaac's AI nutrition assistant. "
-        f"They follow a {diet} diet, intermittent fasting is {fasting}, and they eat {meals} meals per day. {eating_window} "
-        f"Avoid meal planning. Instead, provide general guidance and advice related to their question. "
-        f"Please keep responses under 30 words. "
-        f"User message: {truncated_user_input}"
-    )
-
-    response = chat_with_ai(prompt)
+    response = chat_with_ai(user_input, user_name, diet, fasting, meals, eating_window)
 
     if response:
         await send_message_with_split(message.chat.id, response)
