@@ -11,6 +11,7 @@ from aiogram.filters import Command
 from fastapi import FastAPI
 from datetime import datetime
 from gradio_client import Client
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Load Firebase credentials from Base64 environment variable
 firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
@@ -63,6 +64,35 @@ async def send_message_with_split(user_id, text):
         await bot.send_message(user_id, text[i:i+chunk_size])
 
 
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+@dp.message(Command("help"))
+async def help_command(message: types.Message):
+    help_text = (
+        "🤖 *AI Dietitian Bot - Command List:*\n\n"
+        "⚡ /start - Restart the bot and show the main menu\n"
+        "📋 /set_diet - Choose your diet type\n"
+        "⏳ /set_fasting - Enable or disable intermittent fasting\n"
+        "🍱 /set_meals - Set the number of meals per day\n"
+        "⚖️ /set_weight - Update your weight\n"
+        "🎯 /set_goal - Set your weight goal\n"
+        "📊 /status - View your current settings\n"
+        "❓ /help - Show this command list\n"
+        "\nℹ️ *Tap a button below to update your details!*"
+    )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📋 Set Diet", callback_data="set_diet"),
+         InlineKeyboardButton(text="⏳ Set Fasting", callback_data="set_fasting")],
+        [InlineKeyboardButton(text="🍱 Set Meals", callback_data="set_meals"),
+         InlineKeyboardButton(text="⚖️ Set Weight", callback_data="set_weight")],
+        [InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
+         InlineKeyboardButton(text="📊 View Status", callback_data="status")]
+    ])
+
+    await message.answer(help_text, parse_mode="Markdown", reply_markup=keyboard)
+
+
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
@@ -71,42 +101,116 @@ async def start(message: types.Message):
     user_ref = db.collection("users").document(user_id)
     user = user_ref.get()
 
+    # Create menu buttons
+    keyboard = InlineKeyboardMarkup(row_width=2)
+    keyboard.add(
+        InlineKeyboardButton("📋 Set Diet", callback_data="set_diet"),
+        InlineKeyboardButton("⏳ Set Fasting", callback_data="set_fasting"),
+        InlineKeyboardButton("🍱 Set Meals", callback_data="set_meals"),
+        InlineKeyboardButton("⚖️ Set Weight", callback_data="set_weight"),
+        InlineKeyboardButton("🎯 Set Goal", callback_data="set_goal"),
+        InlineKeyboardButton("📊 View Status", callback_data="view_status"),
+    )
+
     if user.exists:
         user_data = user.to_dict()
         weight = user_data.get("weight", "Unknown")
         goal = user_data.get("goal", "Not set")
-        await message.answer(WELCOME_BACK.format(name=user_name, weight=weight, goal=goal))
+        await message.answer(WELCOME_BACK.format(name=user_name, weight=weight, goal=goal), reply_markup=keyboard)
     else:
-        await message.answer(WELCOME_NEW.format(name=user_name))
+        await message.answer(WELCOME_NEW.format(name=user_name), reply_markup=keyboard)
         user_ref.set({"user_id": user_id, "name": user_name})
+
+@dp.message(Command("status"))
+async def status_command(message: types.Message):
+    user_id = str(message.from_user.id)
+    user_ref = db.collection("users").document(user_id)
+    user = user_ref.get()
+
+    if user.exists:
+        user_data = user.to_dict()
+        diet = user_data.get("diet", "Not set")
+        fasting = "Enabled" if user_data.get("fasting", False) else "Disabled"
+        meals = user_data.get("meals_per_day", "Not set")
+        weight = user_data.get("weight", "Unknown")
+        goal = user_data.get("goal", "Not set")
+        eating_window = user_data.get("eating_window", "Not set")
+
+        status_text = (
+            f"📊 *Your Current Settings:*\n\n"
+            f"🍽 *Diet:* {diet}\n"
+            f"⏳ *Fasting:* {fasting}\n"
+            f"🍱 *Meals per Day:* {meals}\n"
+            f"⚖️ *Current Weight:* {weight} kg\n"
+            f"🎯 *Goal Weight:* {goal} kg\n"
+            f"🕰 *Eating Window:* {eating_window}\n\n"
+            "💡 *Tap a button below to update your details!*"
+        )
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📋 Set Diet", callback_data="set_diet"),
+             InlineKeyboardButton(text="⏳ Set Fasting", callback_data="set_fasting")],
+            [InlineKeyboardButton(text="🍱 Set Meals", callback_data="set_meals"),
+             InlineKeyboardButton(text="⚖️ Set Weight", callback_data="set_weight")],
+            [InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
+             InlineKeyboardButton(text="🕰 Set Eating Window", callback_data="set_eating_window")]
+        ])
+
+        await message.answer(status_text, parse_mode="Markdown", reply_markup=keyboard)
+    else:
+        await message.answer("⚠️ No data found. Please use /start to set up your profile.")
 
 @dp.message(Command("setgoal"))
 async def set_goal(message: types.Message):
+    """Handles setting the user's goal weight."""
     user_id = str(message.from_user.id)
     parts = message.text.split()
+
     if len(parts) < 2:
-        await message.answer("Please enter your target weight. Example: /setgoal 75")
+        await message.answer("🎯 *Set Your Goal Weight*\n\n"
+                             "Please enter your target weight in kg.\n"
+                             "Example: `/setgoal 75`",
+                             parse_mode="Markdown")
         return
+
     try:
         goal_weight = float(parts[1])
         db.collection("users").document(user_id).update({"goal": goal_weight})
-        await message.answer(GOAL_SET.format(goal=goal_weight))
+
+        await message.answer(f"✅ *Goal Updated!*\n\n"
+                             f"🎯 Your target weight is now *{goal_weight} kg*.",
+                             parse_mode="Markdown")
     except ValueError:
-        await message.answer(INVALID_WEIGHT)
+        await message.answer("⚠️ *Invalid input!*\n\n"
+                             "Please enter a valid number. Example: `/setgoal 75`",
+                             parse_mode="Markdown")
+
 
 @dp.message(Command("logweight"))
 async def log_weight(message: types.Message):
+    """Handles logging the user's current weight."""
     user_id = str(message.from_user.id)
     parts = message.text.split()
+
     if len(parts) < 2:
-        await message.answer("Please enter your current weight. Example: /logweight 82.5")
+        await message.answer("⚖️ *Log Your Current Weight*\n\n"
+                             "Please enter your weight in kg.\n"
+                             "Example: `/logweight 82.5`",
+                             parse_mode="Markdown")
         return
+
     try:
         weight = float(parts[1])
         db.collection("users").document(user_id).update({"weight": weight})
-        await message.answer(WEIGHT_LOGGED.format(weight=weight))
+
+        await message.answer(f"📊 *Weight Logged!*\n\n"
+                             f"⚖️ Your current weight is *{weight} kg*.",
+                             parse_mode="Markdown")
     except ValueError:
-        await message.answer(INVALID_WEIGHT)
+        await message.answer("⚠️ *Invalid input!*\n\n"
+                             "Please enter a valid number. Example: `/logweight 82.5`",
+                             parse_mode="Markdown")
+
 
 @dp.message(Command("advice"))
 async def get_advice(message: types.Message):
