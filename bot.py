@@ -63,14 +63,26 @@ async def home():
 def chat_with_ai(prompt):
     """Send user message to Hugging Face model and return response."""
     try:
+        print(f"Sending to HF: {prompt}")  # Debugging log
         response = client.predict(
-            message=prompt,
-            api_name="/chat"
+            prompt,  # Ensure the correct input format
+            api_name="/predict"  # Verify this matches your HF Space API
         )
+        print(f"HF Response: {response}")  # Debugging log
         return response
     except Exception as e:
         print("Error:", e)
         return "Sorry, something went wrong! Please try again later."
+
+
+@dp.message()
+async def handle_chat(message: types.Message):
+    """Handles regular chat messages and sends them to the AI model."""
+    user_input = message.text.strip()
+    if user_input:  # Ensure message is not empty
+        response = chat_with_ai(user_input)
+        await message.answer(response)
+
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
@@ -134,6 +146,13 @@ async def send_scheduled_messages():
                 user_id = user.id
                 await bot.send_message(user_id, SCHEDULED_MESSAGES[now])
         await asyncio.sleep(60)  # Check every minute
+
+@dp.message()
+async def handle_chat(message: types.Message):
+    user_input = message.text.strip()
+    response = chat_with_ai(user_input)
+    await message.answer(response)
+
 
 async def main():
     asyncio.create_task(send_scheduled_messages())
