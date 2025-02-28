@@ -65,7 +65,7 @@ async def send_message_with_split(user_id, text):
         await bot.send_message(user_id, text[i:i+chunk_size])
 
 
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
 
 @dp.message(Command("help"))
 async def help_command(message: types.Message):
@@ -86,17 +86,27 @@ async def help_command(message: types.Message):
 
     await message.answer(help_text, parse_mode="Markdown", reply_markup=keyboard)
 
+
+
 def get_start_keyboard():
-    keyboard = InlineKeyboardMarkup(row_width=2)  # Ensure this is inside the function
-    keyboard.add(
-        InlineKeyboardButton("📋 Set Diet", callback_data="set_diet"),
-        InlineKeyboardButton("⏳ Set Fasting", callback_data="set_fasting"),
-        InlineKeyboardButton("🍱 Set Meals", callback_data="set_meals"),
-        InlineKeyboardButton("⚖️ Set Weight", callback_data="set_weight"),
-        InlineKeyboardButton("🎯 Set Goal", callback_data="set_goal"),
-        InlineKeyboardButton("📊 View Status", callback_data="view_status"),
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="📋 Set Diet", callback_data="set_diet"),
+                InlineKeyboardButton(text="⏳ Set Fasting", callback_data="set_fasting")
+            ],
+            [
+                InlineKeyboardButton(text="🍱 Set Meals", callback_data="set_meals"),
+                InlineKeyboardButton(text="⚖️ Set Weight", callback_data="set_weight")
+            ],
+            [
+                InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
+                InlineKeyboardButton(text="📊 View Status", callback_data="view_status")
+            ]
+        ]
     )
     return keyboard
+
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
