@@ -149,23 +149,26 @@ async def short_encouragement(message: types.Message):
         return
     
     user_data = user.to_dict()
-    user_name = user_data.get("name", "Friend")  # Default to 'Friend' if name is missing
-    weight = user_data.get("weight", None)
-    goal_weight = user_data.get("goal", None)
+    user_name = user_data.get("name", message.from_user.first_name)  # Use Telegram name if missing
+    weight = user_data.get("weight")
+    goal_weight = user_data.get("goal")
 
-    # Create a context message for AI
-    prompt = f"Give {user_name} a short, motivating message. "
-    if weight:
-        prompt += f"Their current weight is {weight} kg. "
-    if goal_weight:
-        prompt += f"Their goal is {goal_weight} kg. "
-    prompt += "Make it positive and inspiring!"
+    # Ensure at least one parameter is included
+    if weight and goal_weight:
+        prompt = f"Give {user_name} a short, highly motivating message. They currently weigh {weight} kg and their goal is {goal_weight} kg. Keep it under 20 words."
+    elif weight:
+        prompt = f"Give {user_name} a short, highly motivating message. They currently weigh {weight} kg. Keep it under 20 words."
+    elif goal_weight:
+        prompt = f"Give {user_name} a short, highly motivating message. Their goal is {goal_weight} kg. Keep it under 20 words."
+    else:
+        prompt = f"Give {user_name} a short, highly motivating message about staying healthy and fit. Keep it under 20 words."
 
     # Get response from AI
     response = chat_with_ai(prompt)
 
     # Send response to user
     await message.answer(response)
+
 
 
 async def send_scheduled_messages():
@@ -181,9 +184,17 @@ async def send_scheduled_messages():
 
 @dp.message()
 async def handle_chat(message: types.Message):
+    """Handle free-text messages, excluding commands."""
     user_input = message.text.strip()
+
+    # If message starts with "/", ignore it (it’s a command)
+    if user_input.startswith("/"):
+        return  
+
+    # Otherwise, process it as chat
     response = chat_with_ai(user_input)
     await message.answer(response)
+
 
 
 async def main():
