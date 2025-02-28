@@ -70,21 +70,21 @@ async def send_message_with_split(user_id, text):
 @dp.message(Command("help"))
 async def help_command(message: types.Message):
     help_text = (
-        "🤖 *AI Dietitian Bot - Command List:*\n\n"
-        "⚡ /start - Restart the bot and show the main menu\n"
-        "📋 /set_diet - Choose your diet type\n"
-        "⏳ /set_fasting - Enable or disable intermittent fasting\n"
-        "🍱 /set_meals - Set the number of meals per day\n"
-        "⚖️ /set_weight - Update your weight\n"
-        "🎯 /set_goal - Set your weight goal\n"
-        "📊 /status - View your current settings\n"
-        "❓ /help - Show this command list\n"
-        "\nℹ️ *Tap a button below to update your details!*"
+        "🤖 *AI Dietitian Bot \\- Command List:*\n\n"
+        "⚡ /start \\- Restart the bot and show the main menu\n"
+        "📋 /set_diet \\- Choose your diet type\n"
+        "⏳ /set_fasting \\- Enable or disable intermittent fasting\n"
+        "🍱 /set_meals \\- Set the number of meals per day\n"
+        "⚖️ /set_weight \\- Update your weight\n"
+        "🎯 /set_goal \\- Set your weight goal\n"
+        "📊 /status \\- View your current settings\n"
+        "❓ /help \\- Show this command list\n"
+        "\nℹ️ *Tap a button below to update your details\\!*"
     )
 
-    keyboard = get_start_keyboard() 
+    keyboard = get_start_keyboard()
 
-    await message.answer(help_text, parse_mode="Markdown", reply_markup=keyboard)
+    await message.answer(help_text, parse_mode="MarkdownV2", reply_markup=keyboard)
 
 
 
