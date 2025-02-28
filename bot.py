@@ -253,8 +253,7 @@ async def set_meals(message: types.Message):
     db.collection("users").document(user_id).update({"meals_per_day": meals_per_day})
     await message.answer(f"Your meals per day is set to {meals_per_day} 🍽️")
 
-
-def truncate_text(text, max_words=25):
+def truncate_text(text, max_words):
     """Truncate text to a maximum number of words."""
     words = text.split()
     return " ".join(words[:max_words])
@@ -262,7 +261,7 @@ def truncate_text(text, max_words=25):
 def chat_with_ai(prompt):
     """Send user message to Hugging Face model and return response."""
     try:
-        truncated_prompt = truncate_text(prompt, max_words=25)  # Ensure prompt is within 25 words
+        truncated_prompt = truncate_text(prompt, max_words=50)  # Ensure prompt is within 50 words
         print(f"Sending to HF: {truncated_prompt}")  # Debug log
         
         response = client.predict(
@@ -274,23 +273,12 @@ def chat_with_ai(prompt):
             print("HF Response was empty or None")  # Debug log
             return "I couldn't process your request. Please try again!"
 
-        print(f"HF Response: {response}")  # Debug log
-        return response.strip()  # Ensure clean output
+        truncated_response = truncate_text(response.strip(), max_words=30)  # Limit response to 30 words
+        print(f"HF Response (Truncated): {truncated_response}")  # Debug log
+        return truncated_response
     except Exception as e:
         print(f"Error communicating with HF: {e}")
         return "Sorry, something went wrong! Please try again later."
-
-
-async def send_message_with_split(user_id, text):
-    """Send a long message in chunks if needed."""
-    chunk_size = 4096  # Telegram message limit
-    if not text:
-        print("Attempted to send an empty message.")  # Debug log
-        return
-
-    for i in range(0, len(text), chunk_size):
-        await bot.send_message(user_id, text[i:i+chunk_size])
-
 
 @dp.message()
 async def handle_chat(message: types.Message):
@@ -319,10 +307,14 @@ async def handle_chat(message: types.Message):
         if user_data.get("fasting") and user_data.get("eating_window"):
             eating_window = f"Eating window: {user_data['eating_window']['start']} - {user_data['eating_window']['stop']}"
 
+    truncated_user_input = truncate_text(user_input, max_words=50)  # Ensure user input is within 50 words
+
     prompt = (
-        f"You are {user_name}'s personal AI dietitian. "
+        f"You are Isaac's AI nutrition assistant. "
         f"They follow a {diet} diet, intermittent fasting is {fasting}, and they eat {meals} meals per day. {eating_window} "
-        f"User message: {user_input}"
+        f"Avoid meal planning. Instead, provide general guidance and advice related to their question. "
+        f"Please keep responses under 30 words. "
+        f"User message: {truncated_user_input}"
     )
 
     response = chat_with_ai(prompt)
@@ -331,6 +323,7 @@ async def handle_chat(message: types.Message):
         await send_message_with_split(message.chat.id, response)
     else:
         await message.answer("Sorry, I didn't get that. Try again!")
+
 
 async def main():
     asyncio.create_task(send_scheduled_messages())
