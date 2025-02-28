@@ -68,13 +68,28 @@ def chat_with_ai(prompt):
             message=prompt,  # Ensure correct format
             api_name="/chat"  # Use the same endpoint as /advice
         )
+
+        # Check for empty response
+        if not response:
+            print("HF Response was empty or None")  # Debug log
+            return "I couldn't process your request. Please try again!"
+
         print(f"HF Response: {response}")  # Debug log
         return response
     except Exception as e:
-        print("Error:", e)
+        print(f"Error communicating with HF: {e}")
         return "Sorry, something went wrong! Please try again later."
 
 
+async def send_message_with_split(user_id, text):
+    """Send a long message in chunks if needed."""
+    chunk_size = 4096  # Telegram message limit
+    if not text:
+        print("Attempted to send an empty message.")  # Debug log
+        return
+
+    for i in range(0, len(text), chunk_size):
+        await bot.send_message(user_id, text[i:i+chunk_size])
 
 
 
@@ -180,6 +195,8 @@ async def send_scheduled_messages():
                 await bot.send_message(user_id, response)
 
         await asyncio.sleep(60)  # Check every minute
+
+
 @dp.message(Command("setdiet"))
 async def set_diet(message: types.Message):
     """Set user's diet type."""
@@ -269,7 +286,7 @@ async def set_meals(message: types.Message):
 
 @dp.message()
 async def handle_chat(message: types.Message):
-    """Handles normal chat messages with AI, personalizing responses based on user data."""
+    """Handles normal chat messages with AI, ensuring full messages are sent."""
     user_input = message.text.strip()
 
     if user_input.startswith("/"):
@@ -279,7 +296,7 @@ async def handle_chat(message: types.Message):
     user_ref = db.collection("users").document(user_id)
     user = user_ref.get()
 
-    user_name = message.from_user.first_name  # Default to Telegram name
+    user_name = message.from_user.first_name  # Default name
     diet = "unknown"
     fasting = "not specified"
     meals = "unknown"
@@ -287,7 +304,7 @@ async def handle_chat(message: types.Message):
 
     if user.exists:
         user_data = user.to_dict()
-        user_name = user_data.get("name", user_name)  
+        user_name = user_data.get("name", user_name)
         diet = user_data.get("diet", "unknown")
         fasting = "enabled" if user_data.get("fasting") else "disabled"
         meals = user_data.get("meals_per_day", "unknown")
@@ -301,9 +318,11 @@ async def handle_chat(message: types.Message):
     )
 
     response = chat_with_ai(prompt)
-    await message.answer(response)
 
-
+    if response:
+        await send_message_with_split(message.chat.id, response)
+    else:
+        await message.answer("Sorry, I didn't get that. Try again!")
 
 async def main():
     asyncio.create_task(send_scheduled_messages())
