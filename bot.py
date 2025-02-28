@@ -72,11 +72,11 @@ async def help_command(message: types.Message):
     help_text = (
         "🤖 *AI Dietitian Bot \\- Command List:*\n\n"
         "⚡ /start \\- Restart the bot and show the main menu\n"
-        "📋 /set_diet \\- Choose your diet type\n"
-        "⏳ /set_fasting \\- Enable or disable intermittent fasting\n"
-        "🍱 /set_meals \\- Set the number of meals per day\n"
-        "⚖️ /set_weight \\- Update your weight\n"
-        "🎯 /set_goal \\- Set your weight goal\n"
+        "📋 /set\\_diet \\- Choose your diet type\n"
+        "⏳ /set\\_fasting \\- Enable or disable intermittent fasting\n"
+        "🍱 /set\\_meals \\- Set the number of meals per day\n"
+        "⚖️ /set\\_weight \\- Update your weight\n"
+        "🎯 /set\\_goal \\- Set your weight goal\n"
         "📊 /status \\- View your current settings\n"
         "❓ /help \\- Show this command list\n"
         "\nℹ️ *Tap a button below to update your details\\!*"
@@ -85,6 +85,7 @@ async def help_command(message: types.Message):
     keyboard = get_start_keyboard()
 
     await message.answer(help_text, parse_mode="MarkdownV2", reply_markup=keyboard)
+
 
 
 
