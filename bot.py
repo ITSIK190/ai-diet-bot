@@ -60,6 +60,15 @@ ENCOURAGEMENT = "{name}, you're doing great! Keep pushing towards your goals! ðŸ
 async def home():
     return {"message": "AI Dietitian Bot is running!"}
 
+async def send_message_with_split(user_id, text):
+    """Send a long message in chunks if needed."""
+    chunk_size = 4096  # Telegram message limit
+    if not text:
+        print("Attempted to send an empty message.")  # Debug log
+        return
+
+    for i in range(0, len(text), chunk_size):
+        await bot.send_message(user_id, text[i:i+chunk_size])
 
 
 
