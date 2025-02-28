@@ -66,8 +66,8 @@ def chat_with_ai(prompt):
         print(f"Sending to HF: {prompt}")  # Debug log
         response = client.predict(
             message=prompt,  # Ensure correct format
-            api_name="/chat",  # Use the same endpoint as /advice
-            params={"max_tokens": 50}  # Enforce 50-token limit
+            api_name="/chat"  # Use the same endpoint as /advice
+            
         )
 
         # Check for empty response
