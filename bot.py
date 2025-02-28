@@ -60,37 +60,6 @@ ENCOURAGEMENT = "{name}, you're doing great! Keep pushing towards your goals! �
 async def home():
     return {"message": "AI Dietitian Bot is running!"}
 
-def chat_with_ai(prompt):
-    """Send user message to Hugging Face model and return response."""
-    try:
-        print(f"Sending to HF: {prompt}")  # Debug log
-        response = client.predict(
-            message=prompt,  # Ensure correct format
-            api_name="/chat"  # Use the same endpoint as /advice
-            
-        )
-
-        # Check for empty response
-        if not response:
-            print("HF Response was empty or None")  # Debug log
-            return "I couldn't process your request. Please try again!"
-
-        print(f"HF Response: {response}")  # Debug log
-        return response
-    except Exception as e:
-        print(f"Error communicating with HF: {e}")
-        return "Sorry, something went wrong! Please try again later."
-
-
-async def send_message_with_split(user_id, text):
-    """Send a long message in chunks if needed."""
-    chunk_size = 4096  # Telegram message limit
-    if not text:
-        print("Attempted to send an empty message.")  # Debug log
-        return
-
-    for i in range(0, len(text), chunk_size):
-        await bot.send_message(user_id, text[i:i+chunk_size])
 
 
 
@@ -283,6 +252,44 @@ async def set_meals(message: types.Message):
 
     db.collection("users").document(user_id).update({"meals_per_day": meals_per_day})
     await message.answer(f"Your meals per day is set to {meals_per_day} 🍽️")
+
+
+def truncate_text(text, max_words=25):
+    """Truncate text to a maximum number of words."""
+    words = text.split()
+    return " ".join(words[:max_words])
+
+def chat_with_ai(prompt):
+    """Send user message to Hugging Face model and return response."""
+    try:
+        truncated_prompt = truncate_text(prompt, max_words=25)  # Ensure prompt is within 25 words
+        print(f"Sending to HF: {truncated_prompt}")  # Debug log
+        
+        response = client.predict(
+            message=truncated_prompt,
+            api_name="/chat"
+        )
+
+        if not response or not response.strip():  # Check for empty response
+            print("HF Response was empty or None")  # Debug log
+            return "I couldn't process your request. Please try again!"
+
+        print(f"HF Response: {response}")  # Debug log
+        return response.strip()  # Ensure clean output
+    except Exception as e:
+        print(f"Error communicating with HF: {e}")
+        return "Sorry, something went wrong! Please try again later."
+
+
+async def send_message_with_split(user_id, text):
+    """Send a long message in chunks if needed."""
+    chunk_size = 4096  # Telegram message limit
+    if not text:
+        print("Attempted to send an empty message.")  # Debug log
+        return
+
+    for i in range(0, len(text), chunk_size):
+        await bot.send_message(user_id, text[i:i+chunk_size])
 
 
 @dp.message()
