@@ -262,28 +262,37 @@ async def set_meals(message: types.Message):
     db.collection("users").document(user_id).update({"meals_per_day": meals_per_day})
     await message.answer(f"Your meals per day is set to {meals_per_day} 🍽️")
 
-def truncate_text(text, max_words):
+def truncate_text(text, max_words=50):
     """Truncate text to a maximum number of words."""
     words = text.split()
-    return " ".join(words[:max_words])
+    return " ".join(words[:max_words]) if len(words) > max_words else text
 
-def chat_with_ai(prompt):
+def chat_with_ai(user_message, user_name, diet, fasting, meals, eating_window):
     """Send user message to Hugging Face model and return response."""
     try:
-        truncated_prompt = truncate_text(prompt, max_words=50)  # Ensure prompt is within 50 words
-        print(f"Sending to HF: {truncated_prompt}")  # Debug log
+        # Construct full prompt with user details
+        prompt = (
+            f"You are {user_name}'s AI nutrition assistant. "
+            f"They follow a {diet} diet, intermittent fasting is {fasting}, and they eat {meals} meals per day. {eating_window} "
+            f"Avoid meal planning. Instead, provide general guidance and advice related to their question. "
+            f"Please keep responses under 30 words. User message: {user_message}"
+        )
+
+        print(f"Sending to HF: {prompt}")  # Debug log
         
         response = client.predict(
-            message=truncated_prompt,
+            message=prompt,
             api_name="/chat"
         )
 
-        if not response or not response.strip():  # Check for empty response
-            print("HF Response was empty or None")  # Debug log
+        if not response or not response.strip():  
+            print("HF Response was empty or None")  
             return "I couldn't process your request. Please try again!"
 
-        truncated_response = truncate_text(response.strip(), max_words=30)  # Limit response to 30 words
-        print(f"HF Response (Truncated): {truncated_response}")  # Debug log
+        # Truncate AI response instead of user input
+        truncated_response = truncate_text(response.strip(), max_words=30)
+
+        print(f"HF Response: {truncated_response}")  # Debug log
         return truncated_response
     except Exception as e:
         print(f"Error communicating with HF: {e}")
