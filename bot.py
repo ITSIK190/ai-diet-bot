@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
-import json
-import base64
-import firebase_admin
 import asyncio
 import pytz
-from firebase_admin import credentials, firestore
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from fastapi import FastAPI
@@ -13,19 +9,27 @@ from datetime import datetime
 from gradio_client import Client
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import BotCommand
+from bmi_calculator import get_bmi_calories  # Import the function
+from firebase_config import db  # Import Firebase Firestore instance
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, CallbackContext
 
-# Load Firebase credentials from Base64 environment variable
-firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
-if firebase_credentials_b64:
-    firebase_credentials_json = base64.b64decode(firebase_credentials_b64).decode("utf-8")
-    firebase_credentials = json.loads(firebase_credentials_json)
-else:
-    raise ValueError("FIREBASE_CREDENTIALS is not set or invalid.")
+def bmi_command(update: Update, context: CallbackContext) -> None:
+    try:
+        args = context.args
+        if len(args) != 2:
+            update.message.reply_text("Usage: /bmi <weight in lbs> <height in inches>")
+            return
+        
+        weight = float(args[0])
+        height = float(args[1])
+        user_id = str(update.message.chat_id)
 
-# Initialize Firebase
-cred = credentials.Certificate(firebase_credentials)
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+        result = get_bmi_calories(weight, height, user_id)
+        update.message.reply_text(result)
+    
+    except ValueError:
+        update.message.reply_text("Please enter valid numbers for weight and height.")
 
 # Load Telegram bot token from environment variable
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
