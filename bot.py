@@ -2,7 +2,7 @@
 import os
 import asyncio
 import pytz
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.filters import Command
 from fastapi import FastAPI
 from datetime import datetime
@@ -11,25 +11,9 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import BotCommand
 from bmi_calculator import get_bmi_calories  # Import the function
 from firebase_config import db  # Import Firebase Firestore instance
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
+from bmi_handler import router as bmi_router  # Import the BMI command router
 
-def bmi_command(update: Update, context: CallbackContext) -> None:
-    try:
-        args = context.args
-        if len(args) != 2:
-            update.message.reply_text("Usage: /bmi <weight in lbs> <height in inches>")
-            return
-        
-        weight = float(args[0])
-        height = float(args[1])
-        user_id = str(update.message.chat_id)
 
-        result = get_bmi_calories(weight, height, user_id)
-        update.message.reply_text(result)
-    
-    except ValueError:
-        update.message.reply_text("Please enter valid numbers for weight and height.")
 
 # Load Telegram bot token from environment variable
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -40,6 +24,9 @@ if not TELEGRAM_BOT_TOKEN:
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 app = FastAPI()
+router = Router()
+# Register the BMI router
+dp.include_router(bmi_router)
 
 # Initialize Gradio Client
 HF_SPACE_NAME = "Itsik190/ai-diet-coach"
@@ -348,6 +335,84 @@ async def set_fasting(message: types.Message):
     else:
         await message.answer("Intermittent fasting disabled ❌")
 
+
+
+@router.message(Command("setheight"))
+async def set_height(message: types.Message):
+    """Handles setting the user's height in Firebase."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("📏 *Set Your Height*\n\n"
+                             "Please enter your height in cm.\n"
+                             "Example: `/setheight 175`",
+                             parse_mode="Markdown")
+        return
+
+    try:
+        height = int(parts[1])
+        db.collection("users").document(user_id).update({"height": height})
+
+        await message.answer(f"✅ *Height Updated!*\n\n"
+                             f"📏 Your height is now *{height} cm*.",
+                             parse_mode="Markdown")
+    except ValueError:
+        await message.answer("⚠️ *Invalid input!*\n\n"
+                             "Please enter a valid number. Example: `/setheight 175`",
+                             parse_mode="Markdown")
+
+@router.message(Command("setage"))
+async def set_age(message: types.Message):
+    """Handles setting the user's age in Firebase."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("🎂 *Set Your Age*\n\n"
+                             "Please enter your age.\n"
+                             "Example: `/setage 30`",
+                             parse_mode="Markdown")
+        return
+
+    try:
+        age = int(parts[1])
+        db.collection("users").document(user_id).update({"age": age})
+
+        await message.answer(f"✅ *Age Updated!*\n\n"
+                             f"🎂 Your age is now *{age}* years old.",
+                             parse_mode="Markdown")
+    except ValueError:
+        await message.answer("⚠️ *Invalid input!*\n\n"
+                             "Please enter a valid number. Example: `/setage 30`",
+                             parse_mode="Markdown")
+
+@router.message(Command("setgender"))
+async def set_gender(message: types.Message):
+    """Handles setting the user's gender in Firebase."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("🚻 *Set Your Gender*\n\n"
+                             "Please enter your gender (Male/Female/Other).\n"
+                             "Example: `/setgender Male`",
+                             parse_mode="Markdown")
+        return
+
+    gender = parts[1].capitalize()
+    if gender not in ["Male", "Female", "Other"]:
+        await message.answer("⚠️ *Invalid input!*\n\n"
+                             "Please enter `Male`, `Female`, or `Other`.\n"
+                             "Example: `/setgender Male`",
+                             parse_mode="Markdown")
+        return
+
+    db.collection("users").document(user_id).update({"gender": gender})
+
+    await message.answer(f"✅ *Gender Updated!*\n\n"
+                         f"🚻 Your gender is now *{gender}*.",
+                         parse_mode="Markdown")
 
 @dp.message(Command("setmeals"))
 async def set_meals(message: types.Message):
