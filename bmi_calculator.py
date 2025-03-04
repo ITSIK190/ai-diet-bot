@@ -1,19 +1,21 @@
+import os
 import http.client
 import json
 from firebase_config import db  # Import Firestore instance
 
 
-def fetch_and_store_bmi(user_id, weight_lbs, height_inches, age, gender, goal_weight):
+
+def fetch_and_store_bmi(user_id, weight_kg, height_cm, age, gender, goal_weight):
     """Fetch BMI & daily calorie needs and store them in Firebase."""
 
     # Call the API
     conn = http.client.HTTPSConnection("smart-body-mass-index-calculator-bmi.p.rapidapi.com")
     headers = {
-        'x-rapidapi-key': "YOUR_RAPIDAPI_KEY",  # Replace with your actual API key
+        'x-rapidapi-key': os.getenv("rapidapi_key"),  # Replace with your actual API key
         'x-rapidapi-host': "smart-body-mass-index-calculator-bmi.p.rapidapi.com"
     }
     
-    api_url = f"/api/BMI/imperial?lbs={weight_lbs}&inches={height_inches}"
+    api_url = f"/api/BMI/metric?kg={weight_kg}&cm={height_cm}"
     conn.request("GET", api_url, headers=headers)
     res = conn.getresponse()
     data = json.loads(res.read().decode("utf-8"))
@@ -29,8 +31,8 @@ def fetch_and_store_bmi(user_id, weight_lbs, height_inches, age, gender, goal_we
     user_ref.set({
         "bmi": bmi,
         "calories_per_day": calories_per_day,
-        "weight_lbs": weight_lbs,
-        "height_inches": height_inches,
+        "weight_kg": weight_kg,
+        "height_cm": height_cm,
         "goal_weight": goal_weight
     }, merge=True)
 
