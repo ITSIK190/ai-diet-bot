@@ -9,7 +9,6 @@ from datetime import datetime
 from gradio_client import Client
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import BotCommand
-from bmi_calculator import get_bmi_calories  # Import the function
 from firebase_config import db  # Import Firebase Firestore instance
 from bmi_handler import router as bmi_router  # Import the BMI command router
 
