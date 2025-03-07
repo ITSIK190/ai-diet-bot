@@ -95,7 +95,7 @@ def get_start_keyboard():
                 InlineKeyboardButton(text="📊 View Status", callback_data="view_status")
             ],
             [
-                InlineKeyboardButton("Open Profile Form", url="http://yourdomain.com")  # Replace with your FastAPI URL
+                InlineKeyboardButton("Open Profile Form", url="https://ai-diet-bot-production.up.railway.app/")  # Replace with your FastAPI URL
             ]
         ]
     )
