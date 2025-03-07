@@ -3,10 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Page</title>
+    <title>API Gateway Test</title>
+    <script>
+        async function testAPI() {
+            try {
+                const response = await fetch('https://your-api.com/get_user?user_id=1');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
 </head>
 <body>
-    <h2>Test Page</h2>
-    <p>If you can see this message, the HTML page is working fine.</p>
+    <h2>Test API Gateway</h2>
+    <button onclick="testAPI()">Test API</button>
+    <pre id="result"></pre>
 </body>
 </html>
