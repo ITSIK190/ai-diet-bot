@@ -1,10 +1,13 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from firebase_config import db  # Use db from firebase_config.py (already initialized)
+import uvicorn
 import os
 
 # FastAPI instance initialization
 app = FastAPI()
+
+
 
 # Path to your HTML form file
 HTML_FILE = os.path.join(os.path.dirname(__file__), "web_form.html")
@@ -32,3 +35,6 @@ async def update_user(request: Request):
 
     db.collection("users").document(user_id).set(data, merge=True)
     return JSONResponse({"message": "Profile updated successfully"})
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8080)

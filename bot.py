@@ -93,6 +93,9 @@ def get_start_keyboard():
             [
                 InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
                 InlineKeyboardButton(text="📊 View Status", callback_data="view_status")
+            ],
+            [
+                InlineKeyboardButton("Open Profile Form", url="http://yourdomain.com")  # Replace with your FastAPI URL
             ]
         ]
     )
