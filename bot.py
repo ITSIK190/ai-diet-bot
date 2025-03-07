@@ -531,3 +531,8 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())  # Correct polling method
 
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8080)
+
+    
