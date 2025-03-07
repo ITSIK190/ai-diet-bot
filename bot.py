@@ -524,5 +524,10 @@ async def main():
     asyncio.create_task(send_scheduled_messages())  # Start scheduled messages
     await dp.start_polling(bot)
 
+async def main():
+    # Start long polling for the bot to receive messages
+    await dp.start_polling(bot)
+
 if __name__ == "__main__":
     asyncio.run(main())  # Correct polling method
+
