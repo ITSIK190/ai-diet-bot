@@ -57,6 +57,6 @@ def update_user():
         logger.error(f"Error updating user data for user_id {user_id}: {e}", exc_info=True)
         return jsonify({"error": "Error updating user data"}), 500
 
-if __name__ == "__main__":
-    logger.info("Starting Flask app...")
-    app.run(debug=True)
+# if __name__ == "__main__":
+#     logger.info("Starting Flask app...")
+#     app.run(debug=True)

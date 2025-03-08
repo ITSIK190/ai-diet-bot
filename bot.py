@@ -16,6 +16,8 @@ from aiogram.types import BotCommand
 from firebase_config import db  # Import Firebase Firestore instance
 from bmi_handler import router as bmi_router  # Import the BMI command router
 from web_app import app
+from flask import Flask, jsonify
+
 
 
 # Configure logging
@@ -568,6 +570,18 @@ async def set_bot_commands():
     ]
     await bot.set_my_commands(commands)
 
+# Flask app setup
+flask_app = Flask(__name__)
+
+@flask_app.route('/flask_test')
+def flask_test():
+    return jsonify({"message": "Flask app is running!"})
+
+# Function to run Flask app
+def run_flask():
+    flask_app.run(debug=True, use_reloader=False)  # `use_reloader=False` prevents double-starting
+
+
 async def main():
     await set_bot_commands()  # Set commands inside main
     asyncio.create_task(send_scheduled_messages())  # Start scheduled messages
@@ -585,7 +599,9 @@ if __name__ == "__main__":
     # Run web server in a separate thread
     thread = threading.Thread(target=run_web_server)
     thread.start()
-
+    # Start Flask in one thread
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.start()
     # Run bot logic in the main thread
     run_bot()
     # Run the bot polling
