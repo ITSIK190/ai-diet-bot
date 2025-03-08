@@ -22,14 +22,7 @@ from flask import Flask, jsonify
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
-logging.basicConfig(
-    level=log_level,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),  # Print to console
-        logging.FileHandler("app.log")  # Save to a file
-    ]
-)
+logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +86,13 @@ async def trigger_error():
 
 @app.get("/")
 async def home():
+    logger.info("Home route accessed.")
     return {"message": "AI Dietitian Bot is running!"}
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    logger.error(f"An unexpected error occurred: {exc}", exc_info=True)
+    return JSONResponse({"error": "An unexpected error occurred"}, status_code=500)
 
 async def send_message_with_split(user_id, text):
     """Send a long message in chunks if needed."""
@@ -592,7 +591,7 @@ def run_bot():
     print("Bot is running...")
 
 def run_web_server():
-    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="debug")
 
 
 if __name__ == "__main__":
