@@ -4,6 +4,7 @@ import asyncio
 import pytz
 import uvicorn  # Make sure this is at the top of your script
 import logging
+import threading
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.filters import Command
 from fastapi import FastAPI, Request
@@ -14,6 +15,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import BotCommand
 from firebase_config import db  # Import Firebase Firestore instance
 from bmi_handler import router as bmi_router  # Import the BMI command router
+from web_app import app
+
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
@@ -28,6 +31,11 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 # Load Telegram bot token from environment variable
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -565,11 +573,23 @@ async def main():
     asyncio.create_task(send_scheduled_messages())  # Start scheduled messages
     await dp.start_polling(bot)
 
+def run_bot():
+    # Your bot logic here
+    print("Bot is running...")
+
+def run_web_server():
+    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")
+
 
 if __name__ == "__main__":
+    # Run web server in a separate thread
+    thread = threading.Thread(target=run_web_server)
+    thread.start()
+
+    # Run bot logic in the main thread
+    run_bot()
     # Run the bot polling
     asyncio.run(main())
 
-    # Run the FastAPI app
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+
 

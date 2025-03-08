@@ -72,7 +72,7 @@ async def health_check():
     logger.info("Health check requested.")
     return JSONResponse({"status": "ok"})
 
-# Ensure app runs on the correct port
-if __name__ == "__main__":
-    logger.info("Starting FastAPI app on port 8080...")
-    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")
+# # Ensure app runs on the correct port
+# if __name__ == "__main__":
+#     logger.info("Starting FastAPI app on port 8080...")
+#     uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")
