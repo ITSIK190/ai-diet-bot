@@ -3,9 +3,11 @@ import os
 import asyncio
 import pytz
 import uvicorn  # Make sure this is at the top of your script
+import logging
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.filters import Command
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from datetime import datetime
 from gradio_client import Client
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -13,6 +15,18 @@ from aiogram.types import BotCommand
 from firebase_config import db  # Import Firebase Firestore instance
 from bmi_handler import router as bmi_router  # Import the BMI command router
 
+# Configure logging
+log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
+logging.basicConfig(
+    level=log_level,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),  # Print to console
+        logging.FileHandler("app.log")  # Save to a file
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 
 # Load Telegram bot token from environment variable
@@ -40,6 +54,32 @@ WEIGHT_LOGGED = "Got it! Your weight has been logged as {weight} kg. 🎯"
 INVALID_WEIGHT = "Invalid weight. Please enter a number."
 ADVICE_PREFIX = "🧠 AI Advice: "
 ENCOURAGEMENT = "{name}, you're doing great! Keep pushing towards your goals! 🎯"
+
+
+
+# Custom error handler for FastAPI
+@app.exception_handler(Exception)
+async def unicorn_exception_handler(request: Request, exc: Exception):
+    # Log the exception
+    logger.error(f"Unhandled exception occurred: {exc}", exc_info=True)
+
+    # Return a generic message to the user
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Internal server error, please try again later."},
+    )
+
+# Example route with exception handling
+@app.get("/error")
+async def trigger_error():
+    try:
+        # Simulate an error
+        result = 1 / 0
+    except Exception as e:
+        logger.error(f"Error during operation: {str(e)}", exc_info=True)
+        raise e  # Optionally, re-raise the error after logging
+
+    return {"message": "This will not be reached if an error occurs."}
 
 @app.get("/")
 async def home():
@@ -525,12 +565,6 @@ async def main():
     asyncio.create_task(send_scheduled_messages())  # Start scheduled messages
     await dp.start_polling(bot)
 
-async def main():
-    # Start long polling for the bot to receive messages
-    await dp.start_polling(bot)
-
-async def main():
-    await dp.start_polling(bot)  # Ensure dp and bot are defined before this.
 
 if __name__ == "__main__":
     # Run the bot polling
