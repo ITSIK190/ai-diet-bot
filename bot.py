@@ -143,9 +143,6 @@ def get_start_keyboard():
             [
                 InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
                 InlineKeyboardButton(text="📊 View Status", callback_data="view_status")
-            ],
-            [
-                InlineKeyboardButton("Open Profile Form", url="https://ai-diet-bot-production.up.railway.app/")  # Replace with your FastAPI URL
             ]
         ]
     )
