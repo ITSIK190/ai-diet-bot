@@ -2,6 +2,7 @@
 import os
 import asyncio
 import pytz
+import uvicorn  # Make sure this is at the top of your script
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.filters import Command
 from fastapi import FastAPI
@@ -528,11 +529,13 @@ async def main():
     # Start long polling for the bot to receive messages
     await dp.start_polling(bot)
 
-if __name__ == "__main__":
-    asyncio.run(main())  # Correct polling method
+async def main():
+    await dp.start_polling(bot)  # Ensure dp and bot are defined before this.
 
 if __name__ == "__main__":
-    import uvicorn
+    # Run the bot polling
+    asyncio.run(main())
+
+    # Run the FastAPI app
     uvicorn.run(app, host="0.0.0.0", port=8080)
 
-    
