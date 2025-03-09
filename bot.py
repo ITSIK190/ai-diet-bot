@@ -129,7 +129,7 @@ async def help_command(message: types.Message):
 
 
 
-def get_start_keyboard():
+def get_start_keyboard(user_id: str):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -157,14 +157,12 @@ def get_start_keyboard():
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    user_id = str(message.from_user.id)
+    user_id = str(message.from_user.id)  # Ensure it's always a string
     user_name = message.from_user.first_name
     user_ref = db.collection("users").document(user_id)
     user = user_ref.get()
 
-    # Create menu buttons
-    keyboard = get_start_keyboard() 
-    
+    keyboard = get_start_keyboard()  
 
     if user.exists:
         user_data = user.to_dict()
@@ -174,6 +172,11 @@ async def start(message: types.Message):
     else:
         await message.answer(WELCOME_NEW.format(name=user_name), reply_markup=keyboard)
         user_ref.set({"user_id": user_id, "name": user_name})
+
+
+
+
+
 
 @dp.message(Command("status"))
 async def status_command(message: types.Message):
@@ -585,8 +588,10 @@ def run_flask():
 
 
 async def main():
+    logger.info("Bot commands are being set...")
     await set_bot_commands()  # Set commands inside main
     asyncio.create_task(send_scheduled_messages())  # Start scheduled messages
+    logger.info("Bot is starting polling...")
     await dp.start_polling(bot)
 
 def run_bot():
