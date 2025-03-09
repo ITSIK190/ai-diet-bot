@@ -147,7 +147,7 @@ def get_start_keyboard():
             [
                 InlineKeyboardButton(
                     text="📝 Edit Profile", 
-                    url="https://ai-diet-bot-production.up.railway.app/"
+                    url=f"https://ai-diet-bot-production.up.railway.app/?user_id={user_id}"
                 )
             ]
         ]
