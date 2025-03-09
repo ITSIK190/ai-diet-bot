@@ -84,10 +84,21 @@ async def trigger_error():
 
     return {"message": "This will not be reached if an error occurs."}
 
-@app.get("/")
-async def home():
-    logger.info("Home route accessed.")
-    return {"message": "AI Dietitian Bot is running!"}
+# @app.get("/")
+# async def home(user_id: str = None):
+#     """Serve the web form for user profile editing."""
+#     if not user_id:
+#         return {"error": "User ID is required!"}
+
+#     # Load the web form HTML and inject user_id into it
+#     try:
+#         with open("web_form.html", "r", encoding="utf-8") as file:
+#             html_content = file.read().replace("USER_ID_PLACEHOLDER", user_id)
+#         return HTMLResponse(content=html_content)
+#     except Exception as e:
+#         logger.error(f"Error loading form: {e}")
+#         return {"error": "Error loading form"}
+
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
