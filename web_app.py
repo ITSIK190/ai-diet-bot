@@ -2,8 +2,12 @@ import uvicorn
 import logging
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from firebase_config import db
 import os
+
+templates = Jinja2Templates(directory="templates")  # Ensure you have a "templates" folder
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,12 +27,20 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"message": "Internal server error. Please try again later."},
     )
 
-@app.get("/", response_class=FileResponse)
-async def serve_form():
-    """Serves the web form for user profile editing."""
+@app.get("/", response_class=HTMLResponse)
+async def serve_form(request: Request, user_id: str = None):
+    """Serves the web form for user profile editing with user_id."""
     logger.info("Serving web form...")
+
+    if not user_id:
+        logger.error("User ID is missing in request")
+        return HTMLResponse(content="<h1>Error: Missing user_id</h1>", status_code=400)
+
     try:
-        return FileResponse(HTML_FILE)
+        with open("web_form.html", "r", encoding="utf-8") as file:
+            html_content = file.read().replace("USER_ID_PLACEHOLDER", user_id)
+
+        return HTMLResponse(content=html_content)
     except Exception as e:
         logger.error(f"Error serving the form: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error serving the form.")
