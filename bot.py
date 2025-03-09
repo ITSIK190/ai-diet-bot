@@ -109,6 +109,8 @@ async def send_message_with_split(user_id, text):
 
 @dp.message(Command("help"))
 async def help_command(message: types.Message):
+    user_id = str(message.from_user.id)
+
     help_text = (
         "🤖 *AI Dietitian Bot \\- Command List:*\n\n"
         "⚡ /start \\- Restart the bot and show the main menu\n"
@@ -122,7 +124,7 @@ async def help_command(message: types.Message):
         "\nℹ️ *Tap a button below to update your details\\!*"
     )
 
-    keyboard = get_start_keyboard()
+    keyboard = get_start_keyboard(user_id)
 
     await message.answer(help_text, parse_mode="MarkdownV2", reply_markup=keyboard)
 
@@ -162,7 +164,7 @@ async def start(message: types.Message):
     user_ref = db.collection("users").document(user_id)
     user = user_ref.get()
 
-    keyboard = get_start_keyboard()  
+    keyboard = get_start_keyboard(user_id)  
 
     if user.exists:
         user_data = user.to_dict()
@@ -204,14 +206,7 @@ async def status_command(message: types.Message):
             "💡 *Tap a button below to update your details!*"
         )
 
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📋 Set Diet", callback_data="set_diet"),
-             InlineKeyboardButton(text="⏳ Set Fasting", callback_data="set_fasting")],
-            [InlineKeyboardButton(text="🍱 Set Meals", callback_data="set_meals"),
-             InlineKeyboardButton(text="⚖️ Set Weight", callback_data="set_weight")],
-            [InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
-             InlineKeyboardButton(text="🕰 Set Eating Window", callback_data="set_eating_window")]
-        ])
+        keyboard = get_start_keyboard(user_id)  
 
         await message.answer(status_text, parse_mode="Markdown", reply_markup=keyboard)
     else:
