@@ -575,7 +575,7 @@ def flask_test():
 
 # Function to run Flask app
 def run_flask():
-    flask_app.run(debug=True, use_reloader=False)  # `use_reloader=False` prevents double-starting
+    flask_app.run(host="0.0.0.0", port=8080, debug=True, use_reloader=False)  # `use_reloader=False` prevents double-starting
 
 
 async def main():
