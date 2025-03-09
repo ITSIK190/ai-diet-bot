@@ -593,10 +593,10 @@ def run_web_server():
 
 if __name__ == "__main__":
     # Run web server in a separate thread
-    thread = #threading.Thread(target=run_web_server)
+    thread = threading.Thread(target=run_web_server)
     thread.start()
     # Start Flask in one thread
-    flask_thread = #threading.Thread(target=run_flask)
+    flask_thread = threading.Thread(target=run_flask)
     flask_thread.start()
     # Run bot logic in the main thread
     run_bot()
