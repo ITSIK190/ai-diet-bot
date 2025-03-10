@@ -584,13 +584,13 @@ async def set_bot_commands():
 # Flask app setup
 flask_app = Flask(__name__)
 
-@flask_app.route('/flask_test')
-def flask_test():
-    return jsonify({"message": "Flask app is running!"})
+# @flask_app.route('/flask_test')
+# def flask_test():
+#     return jsonify({"message": "Flask app is running!"})
 
-# Function to run Flask app
-def run_flask():
-    flask_app.run(host="0.0.0.0", port=8080, debug=True, use_reloader=False)  # `use_reloader=False` prevents double-starting
+# # Function to run Flask app
+# def run_flask():
+#     flask_app.run(host="0.0.0.0", port=8080, debug=True, use_reloader=False)  # `use_reloader=False` prevents double-starting
 
 
 async def main():
@@ -604,7 +604,10 @@ def run_bot():
     # Your bot logic here
     print("Bot is running...")
 
+# Run FastAPI in a separate thread
 def run_web_server():
+    import uvicorn
+    from web_app import app
     uvicorn.run(app, host="0.0.0.0", port=8080, log_level="debug")
 
 
@@ -613,8 +616,8 @@ if __name__ == "__main__":
     thread = threading.Thread(target=run_web_server)
     thread.start()
     # Start Flask in one thread
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.start()
+    # flask_thread = threading.Thread(target=run_flask)
+    # flask_thread.start()
     # Run bot logic in the main thread
     run_bot()
     # Run the bot polling
