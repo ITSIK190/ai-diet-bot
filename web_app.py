@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -12,19 +13,30 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")  # Ensure you have a "templates" folder
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def serve_form(request: Request, user_id: str = None):
-    """Serves the web form for user profile editing with user_id."""
+    logger.info(f"Serving web form for user_id: {user_id}")
+
     if not user_id:
-        return HTMLResponse("<h1>Error: Missing user_id</h1>", status_code=400)
-    
+        logger.error("User ID is missing in request")
+        return HTMLResponse(content="<h1>Error: Missing user_id</h1>", status_code=400)
+
     try:
-        with open("web_form.html", "r", encoding="utf-8") as file:
+        html_file = os.path.join(os.path.dirname(__file__), "web_form.html")
+        
+        if not os.path.exists(html_file):  # Check if file exists
+            logger.error("web_form.html not found")
+            return HTMLResponse(content="<h1>Error: web_form.html not found</h1>", status_code=500)
+
+        with open(html_file, "r", encoding="utf-8") as file:
             html_content = file.read().replace("USER_ID_PLACEHOLDER", user_id)
-        return HTMLResponse(html_content)
+
+        return HTMLResponse(content=html_content, status_code=200)
+    
     except Exception as e:
-        logger.error(f"Error serving form: {e}")
-        raise HTTPException(status_code=500, detail="Error serving the form.")
+        logger.error(f"Error serving the form: {e}", exc_info=True)
+        return HTMLResponse(content="<h1>Internal Server Error</h1>", status_code=500)
+
 
 @app.get("/get_user")
 async def get_user(user_id: str):
