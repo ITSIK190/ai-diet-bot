@@ -20,7 +20,6 @@ from web_app import app
 from flask import Flask, jsonify
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from ai_manager import generate_encouragement, chat_with_ai
-from aiogram import executor
 from schedule_manager import send_scheduled_messages, cache_encouragements
 
 # Configure logging
@@ -645,7 +644,6 @@ async def on_startup(_):
     asyncio.create_task(cache_encouragements())  # 🔹 Keep cache full
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
     # Run web server in a separate thread
     thread = threading.Thread(target=run_web_server)
     thread.start()
