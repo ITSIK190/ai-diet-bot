@@ -608,27 +608,26 @@ async def set_bot_commands():
         BotCommand(command="status", description="View your current progress"),
         BotCommand(command="setgoal", description="Set your target weight"),
         BotCommand(command="logweight", description="Log your current weight"),
+        BotCommand(command="m", description="Get motivation"),
     ]
     await bot.set_my_commands(commands)
 
 # Flask app setup
 flask_app = Flask(__name__)
 
-# @flask_app.route('/flask_test')
-# def flask_test():
-#     return jsonify({"message": "Flask app is running!"})
 
-# # Function to run Flask app
-# def run_flask():
-#     flask_app.run(host="0.0.0.0", port=8080, debug=True, use_reloader=False)  # `use_reloader=False` prevents double-starting
 
 
 async def main():
+    """Main async function to run the bot."""
     logger.info("Bot commands are being set...")
-    await set_bot_commands()  # Set commands inside main
-    asyncio.create_task(send_scheduled_messages(bot))  # Start scheduled messages
+    await set_bot_commands()  
+
+    # ✅ Start scheduled messages
+    asyncio.create_task(send_scheduled_messages())  
+
     logger.info("Bot is starting polling...")
-    await dp.start_polling(bot)
+    await dp.start_polling(bot)  # ✅ Proper aiogram v3 polling
 
 def run_bot():
     # Your bot logic here
@@ -647,20 +646,11 @@ async def on_startup(_):
 async def main():
     await send_scheduled_messages(bot)
 
+# ✅ Run Web Server in a Separate Thread
+thread = threading.Thread(target=run_web_server)
+thread.daemon = True  # Make sure it stops with the main process
+thread.start()
+
+# ✅ Run the bot using asyncio event loop
 if __name__ == "__main__":
-    # Run web server in a separate thread
-    thread = threading.Thread(target=run_web_server)
-    thread.start()
-
-    # Run bot logic in the main thread
-    run_bot()
-
-    # ✅ Create a new asyncio event loop (fixes "There is no current event loop" warning)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    # ✅ Run scheduled messages inside the loop
-    loop.create_task(send_scheduled_messages(bot))
-
-    # ✅ Keep the bot running
-    loop.run_forever()
+    asyncio.run(main())  # Replaces custom event loop handling
