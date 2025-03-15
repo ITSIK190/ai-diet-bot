@@ -7,22 +7,24 @@ from google.api_core.exceptions import DeadlineExceeded
 import firebase_admin
 from firebase_admin import credentials
 
-# Load Firebase credentials from Base64 environment variable
+# Decode Base64 Firebase credentials and save to a temporary file
 firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
-
 if not firebase_credentials_b64:
     raise ValueError("FIREBASE_CREDENTIALS is not set or invalid.")
 
+firebase_json_path = "/tmp/firebase_creds.json"  # Save in /tmp
 try:
     firebase_credentials_json = base64.b64decode(firebase_credentials_b64).decode("utf-8")
-    firebase_credentials = json.loads(firebase_credentials_json)
+    with open(firebase_json_path, "w") as f:
+        f.write(firebase_credentials_json)
 
-    # Initialize Firebase only if not already initialized
+    # Initialize Firebase using the temp file
     if not firebase_admin._apps:
-        cred = credentials.Certificate(firebase_credentials)
+        cred = credentials.Certificate(firebase_json_path)
         firebase_admin.initialize_app(cred)
 
     db = firestore.Client()
+    print("🔥 Firebase initialized successfully.")
 
 except Exception as e:
     raise RuntimeError(f"Failed to initialize Firebase: {e}")
