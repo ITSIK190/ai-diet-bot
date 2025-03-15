@@ -655,10 +655,12 @@ if __name__ == "__main__":
     # Run bot logic in the main thread
     run_bot()
 
-    # ✅ Run scheduled messages inside the event loop without blocking
-    loop = asyncio.get_event_loop()
+    # ✅ Create a new asyncio event loop (fixes "There is no current event loop" warning)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    # ✅ Run scheduled messages inside the loop
     loop.create_task(send_scheduled_messages(bot))
 
     # ✅ Keep the bot running
     loop.run_forever()
-
