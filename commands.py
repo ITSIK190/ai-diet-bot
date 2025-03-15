@@ -1,5 +1,5 @@
 from aiogram import types
-from aiogram.dispatcher.filters import Command
+from aiogram.filters import Command
 from firebase_config import db
 from bot import dp
 
