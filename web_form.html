@@ -33,49 +33,45 @@
 
     <script>
         async function loadProfile() {
-            const userId = "USER_ID_PLACEHOLDER";  // Injected by backend
-
+            const tg = window.Telegram.WebApp;
+            tg.expand();  // Ensure the WebApp expands to full screen
+    
+            const userId = tg.initDataUnsafe?.user?.id;  // Get user ID from Telegram
+    
             if (!userId) {
                 alert("Error: User ID missing!");
                 return;
             }
-
+    
             try {
                 const response = await fetch(`https://ai-diet-bot-production.up.railway.app/get_user?user_id=${userId}`);
                 
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
-
+    
                 const userData = await response.json();
-
-                // Check if response contains expected data
-                if (!userData || Object.keys(userData).length === 0) {
-                    alert("No user data found.");
-                    return;
-                }
-
-                // Prefill form safely
-                document.getElementById("weight").value = userData.weight || "";  // Matches the JSON key `weight`
-                document.getElementById("goal").value = userData.goal || "";  // Matches the JSON key `goal`
-
-                // The following fields do not exist in your JSON, so you may either remove them or handle them differently.
-                document.getElementById("diet").value = userData.diet || "";  // Matches the JSON key `diet`
-                document.getElementById("fasting").checked = userData.fasting || false;  // Matches the JSON key `fasting`
-                document.getElementById("meals_per_day").value = userData.meals_per_day || "";  // Matches the JSON key `meals_per_day`
-                document.getElementById("eating_window_start").value = userData.eating_window?.start || "";  // Matches `eating_window.start`
-                document.getElementById("eating_window_stop").value = userData.eating_window?.stop || "";  // Matches `eating_window.stop`
-
+    
+                // Prefill form
+                document.getElementById("weight").value = userData.weight || "";
+                document.getElementById("goal").value = userData.goal || "";
+                document.getElementById("diet").value = userData.diet || "";
+                document.getElementById("fasting").checked = userData.fasting;
+                document.getElementById("meals_per_day").value = userData.meals_per_day || "";
+                document.getElementById("eating_window_start").value = userData.eating_window?.start || "";
+                document.getElementById("eating_window_stop").value = userData.eating_window?.stop || "";
+    
             } catch (error) {
                 console.error("Failed to load user profile:", error);
                 alert("Failed to load profile. Please check your connection.");
             }
         }
-
+    
         async function saveProfile() {
-            const userId = "USER_ID_PLACEHOLDER";  // Injected by backend
-
+            const tg = window.Telegram.WebApp;
+            const userId = tg.initDataUnsafe?.user?.id;
+    
             const data = {
                 user_id: userId,
-                weight_kg: document.getElementById("weight").value,
+                weight: document.getElementById("weight").value,
                 goal: document.getElementById("goal").value,
                 diet: document.getElementById("diet").value,
                 fasting: document.getElementById("fasting").checked,
@@ -85,25 +81,28 @@
                     stop: document.getElementById("eating_window_stop").value
                 }
             };
-
+    
             try {
                 const response = await fetch("https://ai-diet-bot-production.up.railway.app/update_user", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(data),
                 });
-
+    
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
-
+    
                 alert("Profile updated successfully!");
+                tg.close();  // Close the WebApp after saving
+    
             } catch (error) {
                 console.error("Failed to update profile:", error);
                 alert("Failed to update profile. Please try again.");
             }
         }
-
-        // Ensure profile loads after DOM is ready
+    
+        // Load profile when Telegram WebApp is ready
         window.addEventListener("DOMContentLoaded", loadProfile);
     </script>
+    
 </body>
 </html>
