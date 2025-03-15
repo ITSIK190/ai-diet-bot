@@ -5,7 +5,6 @@ import pytz
 import uvicorn  # Make sure this is at the top of your script
 import logging
 import threading
-import commands
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.filters import Command
 from fastapi import FastAPI, Request
@@ -21,6 +20,7 @@ from flask import Flask, jsonify
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from ai_manager import generate_encouragement, chat_with_ai
 from schedule_manager import send_scheduled_messages, cache_encouragements
+from commands import router
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
@@ -46,6 +46,7 @@ app = FastAPI()
 router = Router()
 # Register the BMI router
 dp.include_router(bmi_router)
+dp.include_router(router)
 
 # Initialize Gradio Client
 HF_SPACE_NAME = "Itsik190/ai-diet-coach"
