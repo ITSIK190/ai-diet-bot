@@ -651,13 +651,14 @@ if __name__ == "__main__":
     # Run web server in a separate thread
     thread = threading.Thread(target=run_web_server)
     thread.start()
-    # Start Flask in one thread
-    # flask_thread = threading.Thread(target=run_flask)
-    # flask_thread.start()
+
     # Run bot logic in the main thread
     run_bot()
-    # Run the bot polling
-    asyncio.run(main())
 
+    # ✅ Run scheduled messages inside the event loop without blocking
+    loop = asyncio.get_event_loop()
+    loop.create_task(send_scheduled_messages(bot))
 
+    # ✅ Keep the bot running
+    loop.run_forever()
 

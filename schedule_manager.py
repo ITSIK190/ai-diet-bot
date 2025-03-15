@@ -61,13 +61,12 @@ async def send_scheduled_messages(bot):
                 cached_encouragements = schedule_data.get("cached_encouragements", [])
 
                 if scheduled_time == now and cached_encouragements:
-                    # Send the first message and remove it from cache
-                    message_to_send = cached_encouragements.pop(0)
-                    await bot.send_message(user_id, message_to_send)
+                    # ✅ Create a separate task for sending messages to prevent blocking
+                    asyncio.create_task(bot.send_message(user_id, cached_encouragements.pop(0)))
 
-                    # Update Firestore after removing the used message
+                    # ✅ Update Firestore after removing the used message
                     db.collection("users").document(user_id).collection("scheduled_messages").document(schedule_id).update({
                         "cached_encouragements": cached_encouragements
                     })
 
-        await asyncio.sleep(60)  # Wait 1 minute before checking again
+        await asyncio.sleep(60)  # ✅ Sleep inside loop to prevent high CPU usage
