@@ -623,7 +623,7 @@ async def main():
     logger.info("Bot commands are being set...")
     await set_bot_commands()  
 
-    # ✅ Start scheduled messages
+    # ✅ Start scheduled messages in the background
     asyncio.create_task(send_scheduled_messages())  
 
     logger.info("Bot is starting polling...")
@@ -643,8 +643,6 @@ async def on_startup(_):
     asyncio.create_task(send_scheduled_messages(bot))  # 🔹 Auto-send messages
     asyncio.create_task(cache_encouragements())  # 🔹 Keep cache full
 
-async def main():
-    await send_scheduled_messages(bot)
 
 # ✅ Run Web Server in a Separate Thread
 thread = threading.Thread(target=run_web_server)
