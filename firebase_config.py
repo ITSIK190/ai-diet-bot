@@ -12,19 +12,24 @@ firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
 if not firebase_credentials_b64:
     raise ValueError("FIREBASE_CREDENTIALS is not set or invalid.")
 
-firebase_json_path = "/tmp/firebase_creds.json"  # Save in /tmp
+firebase_json_path = "/tmp/firebase_creds.json"  # Save credentials in a temp file
 try:
     firebase_credentials_json = base64.b64decode(firebase_credentials_b64).decode("utf-8")
     with open(firebase_json_path, "w") as f:
         f.write(firebase_credentials_json)
 
-    # Initialize Firebase using the temp file
+    # 🔹 Set the environment variable BEFORE initializing Firestore
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = firebase_json_path  
+
+    # Initialize Firebase Admin SDK
     if not firebase_admin._apps:
         cred = credentials.Certificate(firebase_json_path)
         firebase_admin.initialize_app(cred)
 
+    # 🔥 Explicitly pass credentials to Firestore
     db = firestore.Client()
-    print("🔥 Firebase initialized successfully.")
+
+    print("✅ Firebase initialized successfully.")
 
 except Exception as e:
     raise RuntimeError(f"Failed to initialize Firebase: {e}")
