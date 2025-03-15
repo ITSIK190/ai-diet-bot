@@ -338,7 +338,7 @@ async def short_encouragement(message: types.Message):
 
 
 # ⏰ Scheduled Message Sender
-async def send_scheduled_messages():
+async def send_scheduled_messages(bot):  # Now expects bot
     timezone = pytz.timezone("Asia/Jerusalem")
     
     while True:
@@ -355,7 +355,7 @@ async def send_scheduled_messages():
                     response = await generate_encouragement(user_id, user_name)
 
                     try:
-                        await bot.send_message(user_id, response)
+                        await bot.send_message(user_id, response)  # ✅ bot is passed
                         await asyncio.sleep(1)  # Prevent Telegram rate limiting
                     except Exception as e:
                         print(f"Telegram Error for user {user_id}: {e}")
@@ -626,7 +626,7 @@ flask_app = Flask(__name__)
 async def main():
     logger.info("Bot commands are being set...")
     await set_bot_commands()  # Set commands inside main
-    asyncio.create_task(send_scheduled_messages())  # Start scheduled messages
+    asyncio.create_task(send_scheduled_messages(bot))  # Start scheduled messages
     logger.info("Bot is starting polling...")
     await dp.start_polling(bot)
 
@@ -641,7 +641,7 @@ def run_web_server():
     uvicorn.run(app, host="0.0.0.0", port=8080, log_level="debug")
 
 async def on_startup(_):
-    asyncio.create_task(send_scheduled_messages())  # 🔹 Auto-send messages
+    asyncio.create_task(send_scheduled_messages(bot))  # 🔹 Auto-send messages
     asyncio.create_task(cache_encouragements())  # 🔹 Keep cache full
 
 async def main():
