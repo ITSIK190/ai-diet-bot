@@ -1,6 +1,5 @@
 import asyncio
 import pytz
-import bot
 from datetime import datetime
 from firebase_config import db
 from ai_manager import generate_encouragement
@@ -43,7 +42,7 @@ async def cache_encouragements():
 
     print("✅ Encouragement messages cached successfully!")
 
-async def send_scheduled_messages():
+async def send_scheduled_messages(bot):
     """Send pre-generated messages at the scheduled time."""
     timezone = pytz.timezone("Asia/Jerusalem")
 

@@ -644,6 +644,9 @@ async def on_startup(_):
     asyncio.create_task(send_scheduled_messages())  # 🔹 Auto-send messages
     asyncio.create_task(cache_encouragements())  # 🔹 Keep cache full
 
+async def main():
+    await send_scheduled_messages(bot)
+
 if __name__ == "__main__":
     # Run web server in a separate thread
     thread = threading.Thread(target=run_web_server)
