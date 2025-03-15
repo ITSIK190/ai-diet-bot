@@ -1,4 +1,4 @@
-aiogram
+aiogram>=3.0.0
 fastapi
 uvicorn
 firebase-admin
@@ -6,3 +6,6 @@ openai
 pytz
 gradio_client
 Flask
+google-cloud-firestore
+python-dotenv
+requests

@@ -22,7 +22,7 @@ try:
         cred = credentials.Certificate(firebase_credentials)
         firebase_admin.initialize_app(cred)
 
-    db = firestore.client()
+    db = firestore.Client()
 
 except Exception as e:
     raise RuntimeError(f"Failed to initialize Firebase: {e}")
