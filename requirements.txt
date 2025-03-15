@@ -9,3 +9,4 @@ Flask
 google-cloud-firestore
 python-dotenv
 requests
+python-telegram-bot
