@@ -624,7 +624,7 @@ async def main():
     await set_bot_commands()  
 
     # ✅ Start scheduled messages in the background
-    asyncio.create_task(send_scheduled_messages())  
+    asyncio.create_task(send_scheduled_messages(bot))  
 
     logger.info("Bot is starting polling...")
     await dp.start_polling(bot)  # ✅ Proper aiogram v3 polling
