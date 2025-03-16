@@ -182,7 +182,7 @@ async def start(message: types.Message):
     try:
         user = user_ref.get()
         keyboard = get_start_keyboard(user_id)
-
+        print(f"Generated Keyboard: {keyboard}")
         if user.exists:
             user_data = user.to_dict()
             weight = user_data.get("weight", "Unknown")

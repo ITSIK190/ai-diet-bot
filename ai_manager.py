@@ -1,9 +1,10 @@
-from firebase_config import db
 import os
+from firebase_config import db
 from huggingface_hub import InferenceClient
 from gradio_client import Client
 
-# 🔹 Hugging Face Model Configuration
+# 🔹 Hugging Face Configuration
+HF_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
 HF_SPACE_NAME = "Itsik190/ai-diet-coach"
 client = Client(HF_SPACE_NAME)
 
@@ -12,24 +13,25 @@ def truncate_text(text, max_words=30):
     words = text.split()
     return " ".join(words[:max_words]) + ("..." if len(words) > max_words else "")
 
-def chat_with_ai(prompt):
+async def chat_with_ai(prompt):
     """Send user message to Hugging Face model and return response."""
     try:
-        print(f"Sending to HF: {prompt}")  # Debug log
+        print(f"🔹 Sending to HF: {prompt}")  # Debug log
 
-        response = client.text_generation(prompt)
+        response = await client.post("/", json={"inputs": prompt})
 
-        if not response or not response.strip():
-            print("HF Response was empty or None")  
+        if not response or not isinstance(response, dict):
+            print("⚠️ HF Response was invalid or empty.")  
             return "I couldn't process your request. Please try again!"
 
-        truncated_response = truncate_text(response.strip(), max_words=30)
+        text_response = response.get("generated_text", "").strip()
+        truncated_response = truncate_text(text_response, max_words=30)
 
-        print(f"HF Response: {truncated_response}")  # Debug log
+        print(f"✅ HF Response: {truncated_response}")  # Debug log
         return truncated_response
 
     except Exception as e:
-        print(f"Error communicating with HF: {e}")
+        print(f"❌ Error communicating with HF: {e}")
         return "Sorry, something went wrong! Please try again later."
 
 async def generate_encouragement(user_id, user_name):
@@ -54,4 +56,4 @@ async def generate_encouragement(user_id, user_name):
     else:
         prompt = f"Give {user_name} a short, highly motivating message about staying healthy and fit. Keep it under 20 words."
 
-    return chat_with_ai(prompt)
+    return await chat_with_ai(prompt)
