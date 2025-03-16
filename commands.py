@@ -7,6 +7,7 @@ from firebase_config import db
 MAX_SCHEDULES = 10
 router = Router()
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def get_schedules_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[

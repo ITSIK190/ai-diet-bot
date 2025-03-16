@@ -34,6 +34,7 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
+
 # Load Telegram bot token from environment variable
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TELEGRAM_BOT_TOKEN:
@@ -44,13 +45,7 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 app = FastAPI()
 router = Router()
-# Register the BMI router
 dp.include_router(bmi_router)
-# dp.include_router(router)
-
-# # Initialize Gradio Client
-# HF_SPACE_NAME = "Itsik190/ai-diet-coach"
-# client = Client(HF_SPACE_NAME)
 
 # English Translations
 WELCOME_BACK = "Welcome back, {name}!\nYour last recorded weight: {weight} kg\nYour goal: {goal} kg"
@@ -87,20 +82,6 @@ async def trigger_error():
 
     return {"message": "This will not be reached if an error occurs."}
 
-# @app.get("/")
-# async def home(user_id: str = None):
-#     """Serve the web form for user profile editing."""
-#     if not user_id:
-#         return {"error": "User ID is required!"}
-
-#     # Load the web form HTML and inject user_id into it
-#     try:
-#         with open("web_form.html", "r", encoding="utf-8") as file:
-#             html_content = file.read().replace("USER_ID_PLACEHOLDER", user_id)
-#         return HTMLResponse(content=html_content)
-#     except Exception as e:
-#         logger.error(f"Error loading form: {e}")
-#         return {"error": "Error loading form"}
 
 
 @app.exception_handler(Exception)
@@ -292,37 +273,6 @@ async def log_weight(message: types.Message):
                              parse_mode="Markdown")
 
 
-# @dp.message(Command("advice"))
-# async def get_advice(message: types.Message):
-#     user_input = message.text.replace("/advice", "").strip()
-#     if not user_input:
-#         user_input = "Give me a healthy ketogenic meal plan for today."
-#     response = chat_with_ai(user_input)
-#     await message.answer(ADVICE_PREFIX + response)
-
-# async def generate_encouragement(user_id, user_name):
-#     """Generates a short AI-based encouragement message using stored user data."""
-#     user_ref = db.collection("users").document(user_id)
-#     user = user_ref.get()
-
-#     if not user.exists:
-#         return "I don’t have your details yet! Please log your weight with /logweight."
-
-#     user_data = user.to_dict()
-#     weight = user_data.get("weight")
-#     goal_weight = user_data.get("goal")
-
-#     # Ensure at least one parameter is included
-#     if weight and goal_weight:
-#         prompt = f"Give {user_name} a short, highly motivating message. They currently weigh {weight} kg and their goal is {goal_weight} kg. Keep it under 20 words."
-#     elif weight:
-#         prompt = f"Give {user_name} a short, highly motivating message. They currently weigh {weight} kg. Keep it under 20 words."
-#     elif goal_weight:
-#         prompt = f"Give {user_name} a short, highly motivating message. Their goal is {goal_weight} kg. Keep it under 20 words."
-#     else:
-#         prompt = f"Give {user_name} a short, highly motivating message about staying healthy and fit. Keep it under 20 words."
-
-#     return chat_with_ai(prompt)
 
 
 @dp.message(Command("m"))
@@ -531,30 +481,7 @@ def truncate_text(text, max_words=50):
     words = text.split()
     return " ".join(words[:max_words]) if len(words) > max_words else text
 
-# def chat_with_ai(prompt):
-#     """Send user message to Hugging Face model and return response."""
-#     try:
 
-
-#         print(f"Sending to HF: {prompt}")  # Debug log
-        
-#         response = client.predict(
-#             message=prompt,
-#             api_name="/chat"
-#         )
-
-#         if not response or not response.strip():  
-#             print("HF Response was empty or None")  
-#             return "I couldn't process your request. Please try again!"
-
-#         # Truncate AI response instead of user input
-#         truncated_response = truncate_text(response.strip(), max_words=30)
-
-#         print(f"HF Response: {truncated_response}")  # Debug log
-#         return truncated_response
-#     except Exception as e:
-#         print(f"Error communicating with HF: {e}")
-#         return "Sorry, something went wrong! Please try again later."
         
 @dp.message()
 async def handle_chat(message: types.Message):
