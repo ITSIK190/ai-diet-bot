@@ -48,15 +48,9 @@ dp = Dispatcher()
 app = FastAPI()
 router = Router()
 dp.include_router(bmi_router)
+dp.include_router(commands_router)
 
-# English Translations
-WELCOME_BACK = "Welcome back, {name}!\nYour last recorded weight: {weight} kg\nYour goal: {goal} kg"
-WELCOME_NEW = "Welcome, {name}! Please enter your weight (in kg):"
-GOAL_SET = "Your goal is now set to {goal} kg! Keep up the great work! 💪"
-WEIGHT_LOGGED = "Got it! Your weight has been logged as {weight} kg. 🎯"
-INVALID_WEIGHT = "Invalid weight. Please enter a number."
-ADVICE_PREFIX = "🧠 AI Advice: "
-ENCOURAGEMENT = "{name}, you're doing great! Keep pushing towards your goals! 🎯"
+
 
 
 
@@ -71,18 +65,6 @@ async def unicorn_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"message": "Internal server error, please try again later."},
     )
-
-# Example route with exception handling
-@app.get("/error")
-async def trigger_error():
-    try:
-        # Simulate an error
-        result = 1 / 0
-    except Exception as e:
-        logger.error(f"Error during operation: {str(e)}", exc_info=True)
-        raise e  # Optionally, re-raise the error after logging
-
-    return {"message": "This will not be reached if an error occurs."}
 
 
 

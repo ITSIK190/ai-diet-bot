@@ -6,7 +6,7 @@ from firebase_config import db
 
 MAX_SCHEDULES = 10
 router = Router()
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def get_schedules_keyboard():
@@ -118,3 +118,8 @@ async def edit_schedule(message: Message):
     schedule_id = schedule_list[schedule_num]
     schedules_ref.document(schedule_id).update({"time": new_time, "comment": new_comment})
     await message.answer(f"✅ Schedule updated to {new_time} - {new_comment}")
+
+
+@router.message(Command("test"))
+async def test_command(message: Message):
+    await message.answer("Test command works!")
