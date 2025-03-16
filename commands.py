@@ -1,14 +1,22 @@
 from aiogram import Router
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from firebase_config import db
 
 MAX_SCHEDULES = 10
 router = Router()
 
+def get_schedules_keyboard():
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➕ Add Schedule", callback_data="add_schedule")],
+        [InlineKeyboardButton(text="✏️ Edit Schedule", callback_data="edit_schedule")],
+        [InlineKeyboardButton(text="❌ Delete Schedule", callback_data="delete_schedule")]
+    ])
+    return keyboard
+
 @router.message(Command("myschedules"))
 async def view_schedules(message: Message):
-    """Displays the user's current encouragement schedules."""
+    """Displays the user's current encouragement schedules with a keyboard."""
     user_id = str(message.from_user.id)
     schedules_ref = db.collection("users").document(user_id).collection("scheduled_messages")
     schedules = schedules_ref.stream()
@@ -19,7 +27,9 @@ async def view_schedules(message: Message):
         schedule_list.append(f"\U0001F551 {data['time']} - {data['comment']} ({len(data.get('cached_encouragements', []))}/5 cached)")
 
     response = "\n".join(schedule_list) if schedule_list else "You have no scheduled encouragements. Add one with /addschedule"
-    await message.answer(response)
+
+    keyboard = get_schedules_keyboard()  # Attach keyboard to message
+    await message.answer(response, reply_markup=keyboard)
 
 @router.message(Command("addschedule"))
 async def add_schedule(message: Message):
