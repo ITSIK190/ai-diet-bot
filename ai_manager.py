@@ -1,3 +1,4 @@
+import asyncio
 import os
 from firebase_config import db
 from huggingface_hub import InferenceClient
