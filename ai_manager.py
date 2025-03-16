@@ -17,18 +17,14 @@ async def chat_with_ai(prompt):
     """Send user message to Hugging Face model and return response."""
     try:
         print(f"🔹 Sending to HF: {prompt}")  # Debug log
+        
+        # Use the correct `predict()` method for Gradio Client
+        response = await client.async_predict(prompt)
 
-        # ✅ Use `client.predict()` instead of `.post()`
-        response = await client.predict(prompt)
-
-        # 🔍 Debugging log for the raw response
-        print(f"🔍 Raw HF Response: {response}")
-
-        if not response:
-            print("⚠️ HF Response was empty.")  
+        if not response or not isinstance(response, str):
+            print("⚠️ HF Response was invalid or empty.")  
             return "I couldn't process your request. Please try again!"
 
-        # Assuming response is already a text string
         truncated_response = truncate_text(response.strip(), max_words=30)
 
         print(f"✅ HF Response: {truncated_response}")  # Debug log
@@ -36,7 +32,7 @@ async def chat_with_ai(prompt):
 
     except Exception as e:
         print(f"❌ Error communicating with HF: {e}")
-        return f"Sorry, something went wrong! Error: {e}"
+        return "Sorry, something went wrong! Please try again later."
 
 
 
