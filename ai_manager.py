@@ -18,8 +18,8 @@ async def chat_with_ai(prompt):
     try:
         print(f"🔹 Sending to HF: {prompt}")  # Debug log
         
-        # Use the correct `predict()` method for Gradio Client
-        response = await client.async_predict(prompt)
+        # Run the synchronous `predict()` method in a separate thread
+        response = await asyncio.to_thread(client.predict, prompt)
 
         if not response or not isinstance(response, str):
             print("⚠️ HF Response was invalid or empty.")  
