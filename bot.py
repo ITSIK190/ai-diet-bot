@@ -24,15 +24,21 @@ from commands import router
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
-logging.basicConfig(level=logging.DEBUG)
+log_level = getattr(logging, log_level, logging.DEBUG)  # Convert string to logging level
+
+logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s - %(message)s")
 
 logger = logging.getLogger(__name__)
 
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+# Prevent duplicate handlers
+if not logger.hasHandlers():
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+logger.info("Logging is set up correctly!")
 
 
 # Load Telegram bot token from environment variable
