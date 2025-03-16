@@ -2,25 +2,21 @@
 import os
 import asyncio
 import pytz
-import uvicorn  # Make sure this is at the top of your script
 import logging
 import threading
+from datetime import datetime
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.filters import Command
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from datetime import datetime
-# from gradio_client import Client
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.types import BotCommand
-from firebase_config import db, get_users_with_retry # Import Firebase Firestore instance
-from bmi_handler import router as bmi_router  # Import the BMI command router
-from web_app import app
-from flask import Flask, jsonify
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+import uvicorn  # Ensure it's imported after `web_app`
+from firebase_config import db, get_users_with_retry  # Firebase Firestore instance
+from bmi_handler import router as bmi_router  # Import BMI command router
 from ai_manager import generate_encouragement, chat_with_ai
 from schedule_manager import send_scheduled_messages, cache_encouragements
-from commands import router
+from commands import router as commands_router  # Rename to avoid conflicts
+from web_app import app  # Import FastAPI app after defining it
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
@@ -539,11 +535,12 @@ async def set_bot_commands():
         BotCommand(command="setgoal", description="Set your target weight"),
         BotCommand(command="logweight", description="Log your current weight"),
         BotCommand(command="m", description="Get motivation"),
+        BotCommand(command="myschedules", description="View your encouragement schedules"),
     ]
     await bot.set_my_commands(commands)
 
-# Flask app setup
-flask_app = Flask(__name__)
+# # Flask app setup
+# flask_app = Flask(__name__)
 
 
 
@@ -554,8 +551,7 @@ async def main():
     await set_bot_commands()  
 
     # ✅ Ensure router is not already included
-    if router not in dp.sub_routers:
-        dp.include_router(router)  # ← Prevents duplicate registration
+    dp.include_router(commands_router)  # ← Prevents duplicate registration
 
     # ✅ Start scheduled messages in the background
     asyncio.create_task(send_scheduled_messages(bot))  
