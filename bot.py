@@ -533,7 +533,6 @@ async def main():
     
 
     # ✅ Ensure router is not already included
-    dp.include_router(commands_router)  # ← Prevents duplicate registration
     await set_bot_commands()  
     # ✅ Start scheduled messages in the background
     asyncio.create_task(send_scheduled_messages(bot))  
