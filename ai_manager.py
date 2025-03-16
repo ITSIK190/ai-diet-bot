@@ -20,19 +20,28 @@ async def chat_with_ai(prompt):
 
         response = await client.post("/", json={"inputs": prompt})
 
-        if not response or not isinstance(response, dict):
-            print("⚠️ HF Response was invalid or empty.")  
+        # 🔍 Log raw response for debugging
+        print(f"🔍 Raw HF Response: {response}")  
+
+        if not response:
+            print("⚠️ HF Response was empty.")  
             return "I couldn't process your request. Please try again!"
 
-        text_response = response.get("generated_text", "").strip()
-        truncated_response = truncate_text(text_response, max_words=30)
+        # Ensure response is a dict
+        if isinstance(response, dict):
+            text_response = response.get("generated_text", "").strip()
+            truncated_response = truncate_text(text_response, max_words=30)
 
-        print(f"✅ HF Response: {truncated_response}")  # Debug log
-        return truncated_response
+            print(f"✅ HF Response: {truncated_response}")  # Debug log
+            return truncated_response
+        else:
+            print(f"⚠️ Unexpected response type: {type(response)}")  
+            return f"Unexpected response format: {response}"
 
     except Exception as e:
         print(f"❌ Error communicating with HF: {e}")
-        return "Sorry, something went wrong! Please try again later."
+        return f"Sorry, something went wrong! Error: {e}"
+
 
 async def generate_encouragement(user_id, user_name):
     """Generates a short AI-based encouragement message using stored user data."""
