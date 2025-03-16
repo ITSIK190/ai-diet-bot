@@ -620,6 +620,9 @@ async def main():
     logger.info("Bot commands are being set...")
     await set_bot_commands()  
 
+    # ✅ Register all routers
+    dp.include_router(router)  # ← This line makes sure commands are recognized
+
     # ✅ Start scheduled messages in the background
     asyncio.create_task(send_scheduled_messages(bot))  
 
