@@ -10,7 +10,7 @@ from aiogram.filters import Command
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from datetime import datetime
-from gradio_client import Client
+# from gradio_client import Client
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import BotCommand
 from firebase_config import db, get_users_with_retry # Import Firebase Firestore instance
@@ -48,9 +48,9 @@ router = Router()
 dp.include_router(bmi_router)
 dp.include_router(router)
 
-# Initialize Gradio Client
-HF_SPACE_NAME = "Itsik190/ai-diet-coach"
-client = Client(HF_SPACE_NAME)
+# # Initialize Gradio Client
+# HF_SPACE_NAME = "Itsik190/ai-diet-coach"
+# client = Client(HF_SPACE_NAME)
 
 # English Translations
 WELCOME_BACK = "Welcome back, {name}!\nYour last recorded weight: {weight} kg\nYour goal: {goal} kg"
@@ -148,32 +148,27 @@ async def help_command(message: types.Message):
 # 🎨 Start Keyboard with Mini App Integration
 def get_start_keyboard(user_id: str):
     base_url = "https://ai-diet-bot-production.up.railway.app/"
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="📋 Set Diet", callback_data="set_diet"),
-                InlineKeyboardButton(text="⏳ Set Fasting", callback_data="set_fasting"),
-            ],
-            [
-                InlineKeyboardButton(text="🍱 Set Meals", callback_data="set_meals"),
-                InlineKeyboardButton(text="⚖️ Set Weight", callback_data="set_weight"),
-            ],
-            [
-                InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
-                InlineKeyboardButton(text="📊 View Status", callback_data="view_status"),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="📝 Edit Profile", 
-                    url=f"{base_url}?user_id={user_id}"
-                ),
-                InlineKeyboardButton(
-                    text="🚀 Mini App", 
-                    url=f"{base_url}?user_id={user_id}&mini_app=true"
-                ),
-            ],
-        ]
+
+    keyboard = InlineKeyboardMarkup(row_width=2)  # Explicitly setting row width
+
+    # Adding buttons row by row
+    keyboard.add(
+        InlineKeyboardButton(text="📋 Set Diet", callback_data="set_diet"),
+        InlineKeyboardButton(text="⏳ Set Fasting", callback_data="set_fasting"),
     )
+    keyboard.add(
+        InlineKeyboardButton(text="🍱 Set Meals", callback_data="set_meals"),
+        InlineKeyboardButton(text="⚖️ Set Weight", callback_data="set_weight"),
+    )
+    keyboard.add(
+        InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
+        InlineKeyboardButton(text="📊 View Status", callback_data="view_status"),
+    )
+    keyboard.add(
+        InlineKeyboardButton(text="📝 Edit Profile", url=f"{base_url}?user_id={user_id}"),
+        InlineKeyboardButton(text="🚀 Mini App", url=f"{base_url}?user_id={user_id}&mini_app=true"),
+    )
+
     return keyboard
 
 # 🎯 Start Command Handler

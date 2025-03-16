@@ -1,10 +1,11 @@
 from firebase_config import db
 import os
 from huggingface_hub import InferenceClient
+from gradio_client import Client
 
 # 🔹 Hugging Face Model Configuration
 HF_SPACE_NAME = "Itsik190/ai-diet-coach"
-client = InferenceClient(model=HF_SPACE_NAME)
+client = Client(HF_SPACE_NAME)
 
 def truncate_text(text, max_words=30):
     """Truncate text to a maximum number of words."""
