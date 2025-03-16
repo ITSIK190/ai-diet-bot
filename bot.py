@@ -46,7 +46,7 @@ app = FastAPI()
 router = Router()
 # Register the BMI router
 dp.include_router(bmi_router)
-dp.include_router(router)
+# dp.include_router(router)
 
 # # Initialize Gradio Client
 # HF_SPACE_NAME = "Itsik190/ai-diet-coach"
@@ -620,14 +620,16 @@ async def main():
     logger.info("Bot commands are being set...")
     await set_bot_commands()  
 
-    # ✅ Register all routers
-    dp.include_router(router)  # ← This line makes sure commands are recognized
+    # ✅ Ensure router is not already included
+    if router not in dp._routers:
+        dp.include_router(router)  # ← Prevents duplicate registration
 
     # ✅ Start scheduled messages in the background
     asyncio.create_task(send_scheduled_messages(bot))  
 
     logger.info("Bot is starting polling...")
     await dp.start_polling(bot)  # ✅ Proper aiogram v3 polling
+
 
 def run_bot():
     # Your bot logic here
