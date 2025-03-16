@@ -145,31 +145,33 @@ async def help_command(message: types.Message):
 
 
 
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
 # 🎨 Start Keyboard with Mini App Integration
 def get_start_keyboard(user_id: str):
     base_url = "https://ai-diet-bot-production.up.railway.app/"
 
-    keyboard = InlineKeyboardMarkup(row_width=2)  # Explicitly setting row width
-
-    # Adding buttons row by row
-    keyboard.add(
-        InlineKeyboardButton(text="📋 Set Diet", callback_data="set_diet"),
-        InlineKeyboardButton(text="⏳ Set Fasting", callback_data="set_fasting"),
-    )
-    keyboard.add(
-        InlineKeyboardButton(text="🍱 Set Meals", callback_data="set_meals"),
-        InlineKeyboardButton(text="⚖️ Set Weight", callback_data="set_weight"),
-    )
-    keyboard.add(
-        InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
-        InlineKeyboardButton(text="📊 View Status", callback_data="view_status"),
-    )
-    keyboard.add(
-        InlineKeyboardButton(text="📝 Edit Profile", url=f"{base_url}?user_id={user_id}"),
-        InlineKeyboardButton(text="🚀 Mini App", url=f"{base_url}?user_id={user_id}&mini_app=true"),
-    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📋 Set Diet", callback_data="set_diet"),
+            InlineKeyboardButton(text="⏳ Set Fasting", callback_data="set_fasting")
+        ],
+        [
+            InlineKeyboardButton(text="🍱 Set Meals", callback_data="set_meals"),
+            InlineKeyboardButton(text="⚖️ Set Weight", callback_data="set_weight")
+        ],
+        [
+            InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
+            InlineKeyboardButton(text="📊 View Status", callback_data="view_status")
+        ],
+        [
+            InlineKeyboardButton(text="📝 Edit Profile", url=f"{base_url}?user_id={user_id}"),
+            InlineKeyboardButton(text="🚀 Mini App", url=f"{base_url}?user_id={user_id}&mini_app=true")
+        ]
+    ])
 
     return keyboard
+
 
 # 🎯 Start Command Handler
 @dp.message(Command("start"))

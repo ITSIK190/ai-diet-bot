@@ -18,29 +18,26 @@ async def chat_with_ai(prompt):
     try:
         print(f"🔹 Sending to HF: {prompt}")  # Debug log
 
-        response = await client.post("/", json={"inputs": prompt})
+        # ✅ Use `client.predict()` instead of `.post()`
+        response = await client.predict(prompt)
 
-        # 🔍 Log raw response for debugging
-        print(f"🔍 Raw HF Response: {response}")  
+        # 🔍 Debugging log for the raw response
+        print(f"🔍 Raw HF Response: {response}")
 
         if not response:
             print("⚠️ HF Response was empty.")  
             return "I couldn't process your request. Please try again!"
 
-        # Ensure response is a dict
-        if isinstance(response, dict):
-            text_response = response.get("generated_text", "").strip()
-            truncated_response = truncate_text(text_response, max_words=30)
+        # Assuming response is already a text string
+        truncated_response = truncate_text(response.strip(), max_words=30)
 
-            print(f"✅ HF Response: {truncated_response}")  # Debug log
-            return truncated_response
-        else:
-            print(f"⚠️ Unexpected response type: {type(response)}")  
-            return f"Unexpected response format: {response}"
+        print(f"✅ HF Response: {truncated_response}")  # Debug log
+        return truncated_response
 
     except Exception as e:
         print(f"❌ Error communicating with HF: {e}")
         return f"Sorry, something went wrong! Error: {e}"
+
 
 
 async def generate_encouragement(user_id, user_name):
