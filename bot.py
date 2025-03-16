@@ -548,11 +548,11 @@ async def set_bot_commands():
 async def main():
     """Main async function to run the bot."""
     logger.info("Bot commands are being set...")
-    await set_bot_commands()  
+    
 
     # ✅ Ensure router is not already included
     dp.include_router(commands_router)  # ← Prevents duplicate registration
-
+    await set_bot_commands()  
     # ✅ Start scheduled messages in the background
     asyncio.create_task(send_scheduled_messages(bot))  
 
