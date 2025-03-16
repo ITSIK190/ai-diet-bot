@@ -621,7 +621,7 @@ async def main():
     await set_bot_commands()  
 
     # ✅ Ensure router is not already included
-    if router not in dp._routers:
+    if router not in dp.sub_routers:
         dp.include_router(router)  # ← Prevents duplicate registration
 
     # ✅ Start scheduled messages in the background
