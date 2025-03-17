@@ -11,7 +11,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from firebase_config import db, get_users_with_retry  # Firebase Firestore instance
-from bmi_handler import bmirouter as bmi_router  # Import BMI command router
+
 from ai_manager import generate_encouragement, chat_with_ai
 from schedule_manager import send_scheduled_messages, cache_encouragements
 from commands import commandsrouter as commands_router  # Rename to avoid conflicts
@@ -46,6 +46,10 @@ if not TELEGRAM_BOT_TOKEN:
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 #app = FastAPI()
+
+from bmi_handler import bmirouter as bmi_router
+from commands import commandsrouter as commands_router  # Rename to avoid conflicts
+
 dp.include_router(bmi_router)
 dp.include_router(commands_router)
 bot_router = Router()
@@ -535,9 +539,7 @@ async def set_bot_commands():
 
 
 
-
-dp.include_router(bot_router)
-
+dp.include_router(bot_router)  # ✅ Register before starting bot
 
 async def main():
     """Main async function."""
@@ -548,23 +550,19 @@ async def main():
 
     logger.info("Bot is starting polling...")
     bot_task = asyncio.create_task(dp.start_polling(bot))
-    web_task = asyncio.create_task(run_web_server())
+    
+    # ✅ Run FastAPI server in a separate thread instead of async loop
+    loop = asyncio.get_running_loop()
+    loop.run_in_executor(None, run_web_server)  
 
-    await asyncio.gather(bot_task, web_task)  # Run both tasks concurrently
+    await bot_task  # Only await bot polling
 
-
-
-async def run_web_server():
-    """Run FastAPI server inside asyncio."""
+def run_web_server():
+    """Run FastAPI server (blocking)."""
     config = uvicorn.Config(app, host="0.0.0.0", port=8080, log_level="debug")
     server = uvicorn.Server(config)
-    await server.serve()
+    server.run()  # ✅ Run in a separate thread instead of blocking `asyncio`
 
-
-
-
-
-
-# ✅ Run the bot using asyncio event loop
+# ✅ Run bot using asyncio
 if __name__ == "__main__":
-    asyncio.run(main())  # Replaces custom event loop handling
+    asyncio.run(main())
