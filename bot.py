@@ -3,7 +3,7 @@ import os
 import asyncio
 import pytz
 import logging
-import threading
+import aiogram
 from datetime import datetime
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.filters import Command
