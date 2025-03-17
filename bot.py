@@ -459,6 +459,10 @@ async def main():
     asyncio.create_task(cache_encouragements())  
     #asyncio.create_task(run_web_server())  # ✅ Start web server async
     print("Registered routers:", dp.sub_routers)
+
+    print("📌 Registered handlers:")
+    for router in dp.routers:
+        print(router.__dict__)  # This will show all commands & handlers
     logger.info("Bot is starting polling...")
     await dp.start_polling(bot)  # ✅ This is the main blocking task
 
