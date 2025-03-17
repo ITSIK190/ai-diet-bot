@@ -5,7 +5,7 @@ from aiogram.filters import Command
 from firebase_config import db
 
 MAX_SCHEDULES = 10
-commandsrouter = Router()
+commandsrouter = Router(name="commandsrouter")
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
