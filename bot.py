@@ -441,6 +441,7 @@ async def set_bot_commands():
 		BotCommand(command="test", description="test"),
 		BotCommand(command="addschedule", description="addschedule"),
         BotCommand(command="bmi", description="bmi"),
+        BotCommand(command="myschedules", description="myschedules"),
         
     ]
     await bot.set_my_commands(commands)
@@ -457,7 +458,7 @@ async def main():
     asyncio.create_task(send_scheduled_messages(bot))  
     asyncio.create_task(cache_encouragements())  
     #asyncio.create_task(run_web_server())  # ✅ Start web server async
-
+    print("Registered routers:", dp._routers)
     logger.info("Bot is starting polling...")
     await dp.start_polling(bot)  # ✅ This is the main blocking task
 
