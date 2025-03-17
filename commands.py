@@ -5,7 +5,7 @@ from aiogram.filters import Command
 from firebase_config import db
 
 MAX_SCHEDULES = 10
-router = Router()
+commandsrouter = Router()
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ def get_schedules_keyboard():
     ])
     return keyboard
 
-@router.message(Command("myschedules"))
+@commandsrouter.message(Command("myschedules"))
 async def view_schedules(message: Message):
     print(f"Received /myschedules from user {message.from_user.id}")  # Debugging
     """Displays the user's current encouragement schedules with a keyboard."""
@@ -36,7 +36,7 @@ async def view_schedules(message: Message):
     await message.answer(response)
     # await message.answer(response, reply_markup=keyboard)
 
-@router.message(Command("addschedule"))
+@commandsrouter.message(Command("addschedule"))
 async def add_schedule(message: Message):
     """Adds a new encouragement schedule (if under 10)."""
     user_id = str(message.from_user.id)
@@ -60,7 +60,7 @@ async def add_schedule(message: Message):
     schedules_ref.add({"time": time_str, "comment": comment, "cached_encouragements": []})
     await message.answer(f"✅ Added schedule for {time_str} - {comment}")
 
-@router.message(Command("deleteschedule"))
+@commandsrouter.message(Command("deleteschedule"))
 async def delete_schedule(message: Message):
     """Deletes a user's encouragement schedule."""
     user_id = str(message.from_user.id)
@@ -86,7 +86,7 @@ async def delete_schedule(message: Message):
     schedules_ref.document(schedule_id).delete()
     await message.answer("✅ Schedule deleted!")
 
-@router.message(Command("editschedule"))
+@commandsrouter.message(Command("editschedule"))
 async def edit_schedule(message: Message):
     """Edits an existing schedule's time or comment."""
     user_id = str(message.from_user.id)
@@ -120,6 +120,6 @@ async def edit_schedule(message: Message):
     await message.answer(f"✅ Schedule updated to {new_time} - {new_comment}")
 
 
-@router.message(Command("test"))
+@commandsrouter.message(Command("test"))
 async def test_command(message: Message):
     await message.answer("Test command works!")

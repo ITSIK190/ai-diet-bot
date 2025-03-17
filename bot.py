@@ -11,10 +11,10 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from firebase_config import db, get_users_with_retry  # Firebase Firestore instance
-from bmi_handler import router as bmi_router  # Import BMI command router
+from bmi_handler import bmirouter as bmi_router  # Import BMI command router
 from ai_manager import generate_encouragement, chat_with_ai
 from schedule_manager import send_scheduled_messages, cache_encouragements
-from commands import router as commands_router  # Rename to avoid conflicts
+from commands import commandsrouter as commands_router  # Rename to avoid conflicts
 from web_app import app  # Import FastAPI app after defining it
 import uvicorn  # Ensure it's imported after `web_app`
 
@@ -46,10 +46,9 @@ if not TELEGRAM_BOT_TOKEN:
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 #app = FastAPI()
-router = Router()
 dp.include_router(bmi_router)
 dp.include_router(commands_router)
-
+bot_router = Router()
 
 
 
@@ -362,7 +361,7 @@ async def set_fasting(message: types.Message):
 
 
 
-@router.message(Command("setheight"))
+@bot_router.message(Command("setheight"))
 async def set_height(message: types.Message):
     """Handles setting the user's height in Firebase."""
     user_id = str(message.from_user.id)
@@ -387,7 +386,7 @@ async def set_height(message: types.Message):
                              "Please enter a valid number. Example: `/setheight 175`",
                              parse_mode="Markdown")
 
-@router.message(Command("setage"))
+@bot_router.message(Command("setage"))
 async def set_age(message: types.Message):
     """Handles setting the user's age in Firebase."""
     user_id = str(message.from_user.id)
@@ -412,7 +411,7 @@ async def set_age(message: types.Message):
                              "Please enter a valid number. Example: `/setage 30`",
                              parse_mode="Markdown")
 
-@router.message(Command("setgender"))
+@bot_router.message(Command("setgender"))
 async def set_gender(message: types.Message):
     """Handles setting the user's gender in Firebase."""
     user_id = str(message.from_user.id)
@@ -537,7 +536,7 @@ async def set_bot_commands():
 
 
 
-
+dp.include_router(bot_router)
 
 
 async def main():

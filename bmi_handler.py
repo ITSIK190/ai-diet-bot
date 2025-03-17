@@ -3,8 +3,8 @@ from aiogram.filters import Command
 from firebase_admin import firestore
 from bmi_calculator import fetch_and_store_bmi, calculate_goal_calories
 
-router = Router()
-@router.message(Command("bmi"))
+bmirouter = Router()
+@bmirouter.message(Command("bmi"))
 async def bmi_command(message: types.Message):
     """Handles the /bmi command by fetching user data, calculating BMI, TDEE, and goal calories."""
     user_id = str(message.from_user.id)
