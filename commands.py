@@ -202,3 +202,16 @@ async def set_gender(message: types.Message):
     await message.answer(f"✅ *Gender Updated!*\n\n"
                          f"🚻 Your gender is now *{gender}*.",
                          parse_mode="Markdown")
+    
+
+@commandsrouter.message(Command("test2"))
+async def help_handler(message: Message):
+    await message.answer("Here are the available commands...")
+
+
+def register_handlers(router: Router):
+    @router.message(Command("test3"))
+    async def test_command(message: types.Message):
+        await message.answer("✅ Test command works!")
+
+register_handlers(commandsrouter)

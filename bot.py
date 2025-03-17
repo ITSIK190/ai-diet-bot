@@ -379,46 +379,46 @@ def truncate_text(text, max_words=50):
 
 
         
-@dp.message()
-async def handle_chat(message: types.Message):
-    """Handles normal chat messages with AI, ensuring full messages are sent."""
-    user_input = message.text.strip()
+# @dp.message(lambda message: not message.text.startswith("/"))
+# async def handle_chat(message: types.Message):
+#     """Handles normal chat messages with AI, ensuring full messages are sent."""
+#     user_input = message.text.strip()
 
-    if user_input.startswith("/"):
-        return  # Ignore commands
+#     if user_input.startswith("/"):
+#         return  # Ignore commands
 
-    user_id = str(message.from_user.id)
-    user_ref = db.collection("users").document(user_id)
-    user = user_ref.get()
+#     user_id = str(message.from_user.id)
+#     user_ref = db.collection("users").document(user_id)
+#     user = user_ref.get()
 
-    user_name = message.from_user.first_name  # Default name
-    diet = "unknown"
-    fasting = "not specified"
-    meals = "unknown"
-    eating_window = ""
+#     user_name = message.from_user.first_name  # Default name
+#     diet = "unknown"
+#     fasting = "not specified"
+#     meals = "unknown"
+#     eating_window = ""
 
-    if user.exists:
-        user_data = user.to_dict()
-        user_name = user_data.get("name", user_name)
-        diet = user_data.get("diet", "unknown")
-        fasting = "enabled" if user_data.get("fasting") else "disabled"
-        meals = user_data.get("meals_per_day", "unknown")
-        if user_data.get("fasting") and user_data.get("eating_window"):
-            eating_window = f"Eating window: {user_data['eating_window']['start']} - {user_data['eating_window']['stop']}"
+#     if user.exists:
+#         user_data = user.to_dict()
+#         user_name = user_data.get("name", user_name)
+#         diet = user_data.get("diet", "unknown")
+#         fasting = "enabled" if user_data.get("fasting") else "disabled"
+#         meals = user_data.get("meals_per_day", "unknown")
+#         if user_data.get("fasting") and user_data.get("eating_window"):
+#             eating_window = f"Eating window: {user_data['eating_window']['start']} - {user_data['eating_window']['stop']}"
 
-        # Construct full prompt with user details
-        prompt = (
-            f"You are {user_name}'s AI nutrition assistant. "
-            f"They follow a {diet} diet, intermittent fasting is {fasting}, and they eat {meals} meals per day. {eating_window} "
-            f"Avoid meal planning. Instead, provide general guidance and advice related to their question. "
-            f"Please keep responses under 30 words. User message: {user_input}"
-        )
-    response = chat_with_ai(prompt)
+#         # Construct full prompt with user details
+#         prompt = (
+#             f"You are {user_name}'s AI nutrition assistant. "
+#             f"They follow a {diet} diet, intermittent fasting is {fasting}, and they eat {meals} meals per day. {eating_window} "
+#             f"Avoid meal planning. Instead, provide general guidance and advice related to their question. "
+#             f"Please keep responses under 30 words. User message: {user_input}"
+#         )
+#     response = chat_with_ai(prompt)
 
-    if response:
-        await send_message_with_split(message.chat.id, response)
-    else:
-        await message.answer("Sorry, I didn't get that. Try again!")
+#     if response:
+#         await send_message_with_split(message.chat.id, response)
+#     else:
+#         await message.answer("Sorry, I didn't get that. Try again!")
 
 
 async def set_bot_commands():
@@ -462,6 +462,7 @@ async def main():
     print("📌 Registered handlers:")
     for router in dp.sub_routers:
         print(router.__dict__)  # This will show all commands & handlers
+    print(dp.resolve_used_update_types())
     logger.info("Bot is starting polling...")
     logger.info(f"Running aiogram version: {aiogram.__version__}")
     await dp.start_polling(bot)  # ✅ This is the main blocking task
