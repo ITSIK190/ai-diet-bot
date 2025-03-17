@@ -10,13 +10,13 @@ from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-import uvicorn  # Ensure it's imported after `web_app`
 from firebase_config import db, get_users_with_retry  # Firebase Firestore instance
 from bmi_handler import router as bmi_router  # Import BMI command router
 from ai_manager import generate_encouragement, chat_with_ai
 from schedule_manager import send_scheduled_messages, cache_encouragements
 from commands import router as commands_router  # Rename to avoid conflicts
 from web_app import app  # Import FastAPI app after defining it
+import uvicorn  # Ensure it's imported after `web_app`
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
@@ -45,7 +45,7 @@ if not TELEGRAM_BOT_TOKEN:
 # Initialize bot and dispatcher
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
-app = FastAPI()
+#app = FastAPI()
 router = Router()
 dp.include_router(bmi_router)
 dp.include_router(commands_router)
@@ -110,7 +110,7 @@ async def help_command(message: types.Message):
 
 
 
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
 
 # 🎨 Start Keyboard with Mini App Integration
 def get_start_keyboard(user_id: str):
@@ -517,49 +517,54 @@ async def set_bot_commands():
         BotCommand(command="setgoal", description="Set your target weight"),
         BotCommand(command="logweight", description="Log your current weight"),
         BotCommand(command="m", description="Get motivation"),
-        BotCommand(command="myschedules", description="View your encouragement schedules"),
+        BotCommand(command="setdiet", description="setdiet"),
+        BotCommand(command="setmeals", description="setmeals"),
+        BotCommand(command="setgender", description="setgender"),
+        BotCommand(command="setage", description="setage"),
+		BotCommand(command="setheight", description="setheight"),
+		BotCommand(command="setfasting", description="setfasting"),
+		BotCommand(command="deleteschedule", description="deleteschedule"),
+        BotCommand(command="editschedule", description="editschedule"),
+		BotCommand(command="test", description="test"),
+		BotCommand(command="addschedule", description="addschedule"),
+        BotCommand(command="bmi", description="bmi"),
+        
     ]
     await bot.set_my_commands(commands)
 
-# # Flask app setup
-# flask_app = Flask(__name__)
+
+
+
+
 
 
 
 
 async def main():
-    """Main async function to run the bot."""
+    """Main async function."""
     logger.info("Bot commands are being set...")
-    
-
-    # ✅ Ensure router is not already included
     await set_bot_commands()  
-    # ✅ Start scheduled messages in the background
     asyncio.create_task(send_scheduled_messages(bot))  
+    asyncio.create_task(cache_encouragements())  
 
     logger.info("Bot is starting polling...")
-    await dp.start_polling(bot)  # ✅ Proper aiogram v3 polling
+    bot_task = asyncio.create_task(dp.start_polling(bot))
+    web_task = asyncio.create_task(run_web_server())
+
+    await asyncio.gather(bot_task, web_task)  # Run both tasks concurrently
 
 
-def run_bot():
-    # Your bot logic here
-    print("Bot is running...")
 
-# Run FastAPI in a separate thread
-def run_web_server():
-    import uvicorn
-    from web_app import app
-    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="debug")
-
-async def on_startup(_):
-    asyncio.create_task(send_scheduled_messages(bot))  # 🔹 Auto-send messages
-    asyncio.create_task(cache_encouragements())  # 🔹 Keep cache full
+async def run_web_server():
+    """Run FastAPI server inside asyncio."""
+    config = uvicorn.Config(app, host="0.0.0.0", port=8080, log_level="debug")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 
-# ✅ Run Web Server in a Separate Thread
-thread = threading.Thread(target=run_web_server)
-thread.daemon = True  # Make sure it stops with the main process
-thread.start()
+
+
+
 
 # ✅ Run the bot using asyncio event loop
 if __name__ == "__main__":
