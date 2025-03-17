@@ -15,7 +15,7 @@ from firebase_config import db, get_users_with_retry  # Firebase Firestore insta
 from ai_manager import generate_encouragement, chat_with_ai
 from schedule_manager import send_scheduled_messages, cache_encouragements
 
-from web_app import app  # Import FastAPI app after defining it
+#from web_app import app  # Import FastAPI app after defining it
 import uvicorn  # Ensure it's imported after `web_app`
 
 # Configure logging
@@ -456,16 +456,16 @@ async def main():
     await set_bot_commands()  
     asyncio.create_task(send_scheduled_messages(bot))  
     asyncio.create_task(cache_encouragements())  
-    asyncio.create_task(run_web_server())  # ✅ Start web server async
+    #asyncio.create_task(run_web_server())  # ✅ Start web server async
 
     logger.info("Bot is starting polling...")
     await dp.start_polling(bot)  # ✅ This is the main blocking task
 
-async def run_web_server():
-    """Run FastAPI server asynchronously."""
-    config = uvicorn.Config(app, host="0.0.0.0", port=8080, log_level="debug")
-    server = uvicorn.Server(config)
-    await server.serve()  # ✅ Proper async execution
+# async def run_web_server():
+#     """Run FastAPI server asynchronously."""
+#     config = uvicorn.Config(app, host="0.0.0.0", port=8080, log_level="debug")
+#     server = uvicorn.Server(config)
+#     await server.serve()  # ✅ Proper async execution
 
 # ✅ Run bot using asyncio
 if __name__ == "__main__":
