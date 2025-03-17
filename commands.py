@@ -3,8 +3,9 @@ from aiogram import Router, types
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from firebase_config import db
-from bot import get_start_keyboard
 from ai_manager import generate_encouragement, chat_with_ai
+from keyboards import get_start_keyboard  # ✅ Import keyboard from new file
+
 
 MAX_SCHEDULES = 10
 commandsrouter = Router(name="commandsrouter")

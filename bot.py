@@ -11,6 +11,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from firebase_config import db, get_users_with_retry  # Firebase Firestore instance
+from keyboards import get_start_keyboard  # ✅ Import keyboard from new file
+
 
 from ai_manager import generate_encouragement, chat_with_ai
 from schedule_manager import send_scheduled_messages, cache_encouragements_loop
@@ -73,32 +75,6 @@ async def send_message_with_split(user_id, text):
 
 
 
-
-
-# 🎨 Start Keyboard with Mini App Integration
-def get_start_keyboard(user_id: str):
-    base_url = "https://ai-diet-bot-production.up.railway.app/"
-
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="📋 Set Diet", callback_data="set_diet"),
-            InlineKeyboardButton(text="⏳ Set Fasting", callback_data="set_fasting")
-        ],
-        [
-            InlineKeyboardButton(text="🍱 Set Meals", callback_data="set_meals"),
-            InlineKeyboardButton(text="⚖️ Set Weight", callback_data="set_weight")
-        ],
-        [
-            InlineKeyboardButton(text="🎯 Set Goal", callback_data="set_goal"),
-            InlineKeyboardButton(text="📊 View Status", callback_data="view_status")
-        ],
-        [
-            InlineKeyboardButton(text="📝 Edit Profile", url=f"{base_url}?user_id={user_id}"),
-            InlineKeyboardButton(text="🚀 Mini App", url=f"{base_url}?user_id={user_id}&mini_app=true")
-        ]
-    ])
-
-    return keyboard
 
 
 
