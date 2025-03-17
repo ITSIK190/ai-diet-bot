@@ -3,6 +3,8 @@ from aiogram import Router, types
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from firebase_config import db
+from bot import get_start_keyboard
+from ai_manager import generate_encouragement, chat_with_ai
 
 MAX_SCHEDULES = 10
 commandsrouter = Router(name="commandsrouter")
@@ -203,17 +205,101 @@ async def set_gender(message: types.Message):
                          f"🚻 Your gender is now *{gender}*.",
                          parse_mode="Markdown")
     
+@commandsrouter.message(Command("status"))
+async def status_command(message: types.Message):
+    user_id = str(message.from_user.id)
+    user_ref = db.collection("users").document(user_id)
+    user = user_ref.get()
 
-@commandsrouter.message(Command("test2"))
-async def help_handler(message: Message):
-    await message.answer("Here are the available commands...")
+    if user.exists:
+        user_data = user.to_dict()
+        diet = user_data.get("diet", "Not set")
+        fasting = "Enabled" if user_data.get("fasting", False) else "Disabled"
+        meals = user_data.get("meals_per_day", "Not set")
+        weight = user_data.get("weight", "Unknown")
+        goal = user_data.get("goal", "Not set")
+        eating_window = user_data.get("eating_window", "Not set")
+
+        status_text = (
+            f"📊 *Your Current Settings:*\n\n"
+            f"🍽 *Diet:* {diet}\n"
+            f"⏳ *Fasting:* {fasting}\n"
+            f"🍱 *Meals per Day:* {meals}\n"
+            f"⚖️ *Current Weight:* {weight} kg\n"
+            f"🎯 *Goal Weight:* {goal} kg\n"
+            f"🕰 *Eating Window:* {eating_window}\n\n"
+            "💡 *Tap a button below to update your details!*"
+        )
+
+        keyboard = get_start_keyboard(user_id)  
+
+        await message.answer(status_text, parse_mode="Markdown", reply_markup=keyboard)
+    else:
+        await message.answer("⚠️ No data found. Please use /start to set up your profile.")
+
+@commandsrouter.message(Command("setgoal"))
+async def set_goal(message: types.Message):
+    """Handles setting the user's goal weight."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("🎯 *Set Your Goal Weight*\n\n"
+                             "Please enter your target weight in kg.\n"
+                             "Example: `/setgoal 75`",
+                             parse_mode="Markdown")
+        return
+
+    try:
+        goal_weight = float(parts[1])
+        db.collection("users").document(user_id).update({"goal": goal_weight})
+
+        await message.answer(f"✅ *Goal Updated!*\n\n"
+                             f"🎯 Your target weight is now *{goal_weight} kg*.",
+                             parse_mode="Markdown")
+    except ValueError:
+        await message.answer("⚠️ *Invalid input!*\n\n"
+                             "Please enter a valid number. Example: `/setgoal 75`",
+                             parse_mode="Markdown")
 
 
-def register_handlers(router: Router):
-    @router.message(Command("test3"))
-    async def test_command(message: types.Message):
-        await message.answer("✅ Test command works!")
+@commandsrouter.message(Command("logweight"))
+async def log_weight(message: types.Message):
+    """Handles logging the user's current weight."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
 
-register_handlers(commandsrouter)
+    if len(parts) < 2:
+        await message.answer("⚖️ *Log Your Current Weight*\n\n"
+                             "Please enter your weight in kg.\n"
+                             "Example: `/logweight 82.5`",
+                             parse_mode="Markdown")
+        return
+
+    try:
+        weight = float(parts[1])
+        db.collection("users").document(user_id).update({"weight": weight})
+
+        await message.answer(f"📊 *Weight Logged!*\n\n"
+                             f"⚖️ Your current weight is *{weight} kg*.",
+                             parse_mode="Markdown")
+    except ValueError:
+        await message.answer("⚠️ *Invalid input!*\n\n"
+                             "Please enter a valid number. Example: `/logweight 82.5`",
+                             parse_mode="Markdown")
+
+
+
+
+@commandsrouter.message(Command("m"))
+async def short_encouragement(message: types.Message):
+    """Handles /m command to send motivation."""
+    user_id = str(message.from_user.id)
+    user_name = message.from_user.first_name  # Use Telegram first name
+    response = await generate_encouragement(user_id, user_name)
+    await message.answer(response)
+
+
+
 
 

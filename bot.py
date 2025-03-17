@@ -8,8 +8,8 @@ from datetime import datetime
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
-# from fastapi import FastAPI, Request
-# from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from firebase_config import db, get_users_with_retry  # Firebase Firestore instance
 
 from ai_manager import generate_encouragement, chat_with_ai
@@ -45,7 +45,7 @@ if not TELEGRAM_BOT_TOKEN:
 # Initialize bot and dispatcher
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
-#app = FastAPI()
+app = FastAPI()
 
 from bmi_handler import bmirouter as bmi_router
 from commands import commandsrouter as commands_router  # Rename to avoid conflicts
@@ -56,10 +56,10 @@ dp.include_routers(bmi_router, commands_router)
 
 
 
-# @app.exception_handler(Exception)
-# async def general_exception_handler(request: Request, exc: Exception):
-#     logger.error(f"An unexpected error occurred: {exc}", exc_info=True)
-#     return JSONResponse({"error": "An unexpected error occurred"}, status_code=500)
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    logger.error(f"An unexpected error occurred: {exc}", exc_info=True)
+    return JSONResponse({"error": "An unexpected error occurred"}, status_code=500)
 
 async def send_message_with_split(user_id, text):
     """Send a long message in chunks if needed."""
@@ -70,31 +70,6 @@ async def send_message_with_split(user_id, text):
 
     for i in range(0, len(text), chunk_size):
         await bot.send_message(user_id, text[i:i+chunk_size])
-
-
-
-
-@dp.message(Command("help"))
-async def help_command(message: types.Message):
-    user_id = str(message.from_user.id)
-
-    help_text = (
-        "🤖 *AI Dietitian Bot \\- Command List:*\n\n"
-        "⚡ /start \\- Restart the bot and show the main menu\n"
-        "📋 /set\\_diet \\- Choose your diet type\n"
-        "⏳ /set\\_fasting \\- Enable or disable intermittent fasting\n"
-        "🍱 /set\\_meals \\- Set the number of meals per day\n"
-        "⚖️ /set\\_weight \\- Update your weight\n"
-        "🎯 /set\\_goal \\- Set your weight goal\n"
-        "📊 /status \\- View your current settings\n"
-        "❓ /help \\- Show this command list\n"
-        "\nℹ️ *Tap a button below to update your details\\!*"
-    )
-
-    keyboard = get_start_keyboard(user_id)
-
-    await message.answer(help_text, parse_mode="MarkdownV2", reply_markup=keyboard)
-
 
 
 
@@ -126,134 +101,7 @@ def get_start_keyboard(user_id: str):
     return keyboard
 
 
-# 🎯 Start Command Handler
-@dp.message(Command("start"))
-async def start(message: types.Message):
-    user_id = str(message.from_user.id)  # Ensure user_id is a string
-    user_name = message.from_user.first_name or "Friend"  # Default if name missing
 
-    user_ref = db.collection("users").document(user_id)
-    
-    try:
-        user = user_ref.get()
-        keyboard = get_start_keyboard(user_id)
-        print(f"Generated Keyboard: {keyboard}")
-        if user.exists:
-            user_data = user.to_dict()
-            weight = user_data.get("weight", "Unknown")
-            goal = user_data.get("goal", "Not set")
-            await message.answer(
-                f"Welcome back, {user_name}!\n\nYour current weight: {weight} kg\nGoal: {goal} kg",
-                reply_markup=keyboard
-            )
-        else:
-            # New user setup
-            user_ref.set({"user_id": user_id, "name": user_name})
-            await message.answer(
-                f"Hello {user_name}! Welcome to the AI Diet Coach bot. Let's set up your profile!",
-                reply_markup=keyboard
-            )
-
-    except Exception as e:
-        await message.answer("⚠️ An error occurred while accessing your data. Please try again later.")
-        print(f"Firestore Error: {e}")  # Log error for debugging
-
-
-
-
-@dp.message(Command("status"))
-async def status_command(message: types.Message):
-    user_id = str(message.from_user.id)
-    user_ref = db.collection("users").document(user_id)
-    user = user_ref.get()
-
-    if user.exists:
-        user_data = user.to_dict()
-        diet = user_data.get("diet", "Not set")
-        fasting = "Enabled" if user_data.get("fasting", False) else "Disabled"
-        meals = user_data.get("meals_per_day", "Not set")
-        weight = user_data.get("weight", "Unknown")
-        goal = user_data.get("goal", "Not set")
-        eating_window = user_data.get("eating_window", "Not set")
-
-        status_text = (
-            f"📊 *Your Current Settings:*\n\n"
-            f"🍽 *Diet:* {diet}\n"
-            f"⏳ *Fasting:* {fasting}\n"
-            f"🍱 *Meals per Day:* {meals}\n"
-            f"⚖️ *Current Weight:* {weight} kg\n"
-            f"🎯 *Goal Weight:* {goal} kg\n"
-            f"🕰 *Eating Window:* {eating_window}\n\n"
-            "💡 *Tap a button below to update your details!*"
-        )
-
-        keyboard = get_start_keyboard(user_id)  
-
-        await message.answer(status_text, parse_mode="Markdown", reply_markup=keyboard)
-    else:
-        await message.answer("⚠️ No data found. Please use /start to set up your profile.")
-
-@dp.message(Command("setgoal"))
-async def set_goal(message: types.Message):
-    """Handles setting the user's goal weight."""
-    user_id = str(message.from_user.id)
-    parts = message.text.split()
-
-    if len(parts) < 2:
-        await message.answer("🎯 *Set Your Goal Weight*\n\n"
-                             "Please enter your target weight in kg.\n"
-                             "Example: `/setgoal 75`",
-                             parse_mode="Markdown")
-        return
-
-    try:
-        goal_weight = float(parts[1])
-        db.collection("users").document(user_id).update({"goal": goal_weight})
-
-        await message.answer(f"✅ *Goal Updated!*\n\n"
-                             f"🎯 Your target weight is now *{goal_weight} kg*.",
-                             parse_mode="Markdown")
-    except ValueError:
-        await message.answer("⚠️ *Invalid input!*\n\n"
-                             "Please enter a valid number. Example: `/setgoal 75`",
-                             parse_mode="Markdown")
-
-
-@dp.message(Command("logweight"))
-async def log_weight(message: types.Message):
-    """Handles logging the user's current weight."""
-    user_id = str(message.from_user.id)
-    parts = message.text.split()
-
-    if len(parts) < 2:
-        await message.answer("⚖️ *Log Your Current Weight*\n\n"
-                             "Please enter your weight in kg.\n"
-                             "Example: `/logweight 82.5`",
-                             parse_mode="Markdown")
-        return
-
-    try:
-        weight = float(parts[1])
-        db.collection("users").document(user_id).update({"weight": weight})
-
-        await message.answer(f"📊 *Weight Logged!*\n\n"
-                             f"⚖️ Your current weight is *{weight} kg*.",
-                             parse_mode="Markdown")
-    except ValueError:
-        await message.answer("⚠️ *Invalid input!*\n\n"
-                             "Please enter a valid number. Example: `/logweight 82.5`",
-                             parse_mode="Markdown")
-
-
-
-
-@dp.message(Command("m"))
-async def short_encouragement(message: types.Message):
-    """Handles /m command to send motivation."""
-    user_id = str(message.from_user.id)
-    user_name = message.from_user.first_name  # Use Telegram first name
-    response = await generate_encouragement(user_id, user_name)
-    await message.answer(response)
 
 
 # ⏰ Scheduled Message Sender
@@ -379,46 +227,46 @@ def truncate_text(text, max_words=50):
 
 
         
-# @dp.message(lambda message: not message.text.startswith("/"))
-# async def handle_chat(message: types.Message):
-#     """Handles normal chat messages with AI, ensuring full messages are sent."""
-#     user_input = message.text.strip()
+@dp.message(lambda message: not message.text.startswith("/"))
+async def handle_chat(message: types.Message):
+    """Handles normal chat messages with AI, ensuring full messages are sent."""
+    user_input = message.text.strip()
 
-#     if user_input.startswith("/"):
-#         return  # Ignore commands
+    if user_input.startswith("/"):
+        return  # Ignore commands
 
-#     user_id = str(message.from_user.id)
-#     user_ref = db.collection("users").document(user_id)
-#     user = user_ref.get()
+    user_id = str(message.from_user.id)
+    user_ref = db.collection("users").document(user_id)
+    user = user_ref.get()
 
-#     user_name = message.from_user.first_name  # Default name
-#     diet = "unknown"
-#     fasting = "not specified"
-#     meals = "unknown"
-#     eating_window = ""
+    user_name = message.from_user.first_name  # Default name
+    diet = "unknown"
+    fasting = "not specified"
+    meals = "unknown"
+    eating_window = ""
 
-#     if user.exists:
-#         user_data = user.to_dict()
-#         user_name = user_data.get("name", user_name)
-#         diet = user_data.get("diet", "unknown")
-#         fasting = "enabled" if user_data.get("fasting") else "disabled"
-#         meals = user_data.get("meals_per_day", "unknown")
-#         if user_data.get("fasting") and user_data.get("eating_window"):
-#             eating_window = f"Eating window: {user_data['eating_window']['start']} - {user_data['eating_window']['stop']}"
+    if user.exists:
+        user_data = user.to_dict()
+        user_name = user_data.get("name", user_name)
+        diet = user_data.get("diet", "unknown")
+        fasting = "enabled" if user_data.get("fasting") else "disabled"
+        meals = user_data.get("meals_per_day", "unknown")
+        if user_data.get("fasting") and user_data.get("eating_window"):
+            eating_window = f"Eating window: {user_data['eating_window']['start']} - {user_data['eating_window']['stop']}"
 
-#         # Construct full prompt with user details
-#         prompt = (
-#             f"You are {user_name}'s AI nutrition assistant. "
-#             f"They follow a {diet} diet, intermittent fasting is {fasting}, and they eat {meals} meals per day. {eating_window} "
-#             f"Avoid meal planning. Instead, provide general guidance and advice related to their question. "
-#             f"Please keep responses under 30 words. User message: {user_input}"
-#         )
-#     response = chat_with_ai(prompt)
+        # Construct full prompt with user details
+        prompt = (
+            f"You are {user_name}'s AI nutrition assistant. "
+            f"They follow a {diet} diet, intermittent fasting is {fasting}, and they eat {meals} meals per day. {eating_window} "
+            f"Avoid meal planning. Instead, provide general guidance and advice related to their question. "
+            f"Please keep responses under 30 words. User message: {user_input}"
+        )
+    response = chat_with_ai(prompt)
 
-#     if response:
-#         await send_message_with_split(message.chat.id, response)
-#     else:
-#         await message.answer("Sorry, I didn't get that. Try again!")
+    if response:
+        await send_message_with_split(message.chat.id, response)
+    else:
+        await message.answer("Sorry, I didn't get that. Try again!")
 
 
 async def set_bot_commands():
@@ -456,7 +304,7 @@ async def main():
     await set_bot_commands()  
     asyncio.create_task(send_scheduled_messages(bot))  
     asyncio.create_task(cache_encouragements_loop())
-    #asyncio.create_task(run_web_server())  # ✅ Start web server async
+    asyncio.create_task(run_web_server())  # ✅ Start web server async
     print("Registered routers:", dp.sub_routers)
 
     print("📌 Registered handlers:")
@@ -467,11 +315,11 @@ async def main():
     logger.info(f"Running aiogram version: {aiogram.__version__}")
     await dp.start_polling(bot)  # ✅ This is the main blocking task
 
-# async def run_web_server():
-#     """Run FastAPI server asynchronously."""
-#     config = uvicorn.Config(app, host="0.0.0.0", port=8080, log_level="debug")
-#     server = uvicorn.Server(config)
-#     await server.serve()  # ✅ Proper async execution
+async def run_web_server():
+    """Run FastAPI server asynchronously."""
+    config = uvicorn.Config(app, host="0.0.0.0", port=8080, log_level="debug")
+    server = uvicorn.Server(config)
+    await server.serve()  # ✅ Proper async execution
 
 # ✅ Run bot using asyncio
 if __name__ == "__main__":
