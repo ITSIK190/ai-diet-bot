@@ -461,7 +461,7 @@ async def main():
     print("Registered routers:", dp.sub_routers)
 
     print("📌 Registered handlers:")
-    for router in dp.routers:
+    for router in dp.get_routers():
         print(router.__dict__)  # This will show all commands & handlers
     logger.info("Bot is starting polling...")
     await dp.start_polling(bot)  # ✅ This is the main blocking task
