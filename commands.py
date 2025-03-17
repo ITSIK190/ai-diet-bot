@@ -1,5 +1,5 @@
 import logging
-from aiogram import Router
+from aiogram import Router, types
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from firebase_config import db
@@ -123,3 +123,82 @@ async def edit_schedule(message: Message):
 @commandsrouter.message(Command("test"))
 async def test_command(message: Message):
     await message.answer("Test command works!")
+
+
+
+@commandsrouter.message(Command("setheight"))
+async def set_height(message: types.Message):
+    """Handles setting the user's height in Firebase."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("📏 *Set Your Height*\n\n"
+                             "Please enter your height in cm.\n"
+                             "Example: `/setheight 175`",
+                             parse_mode="Markdown")
+        return
+
+    try:
+        height = int(parts[1])
+        db.collection("users").document(user_id).update({"height": height})
+
+        await message.answer(f"✅ *Height Updated!*\n\n"
+                             f"📏 Your height is now *{height} cm*.",
+                             parse_mode="Markdown")
+    except ValueError:
+        await message.answer("⚠️ *Invalid input!*\n\n"
+                             "Please enter a valid number. Example: `/setheight 175`",
+                             parse_mode="Markdown")
+
+@commandsrouter.message(Command("setage"))
+async def set_age(message: types.Message):
+    """Handles setting the user's age in Firebase."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("🎂 *Set Your Age*\n\n"
+                             "Please enter your age.\n"
+                             "Example: `/setage 30`",
+                             parse_mode="Markdown")
+        return
+
+    try:
+        age = int(parts[1])
+        db.collection("users").document(user_id).update({"age": age})
+
+        await message.answer(f"✅ *Age Updated!*\n\n"
+                             f"🎂 Your age is now *{age}* years old.",
+                             parse_mode="Markdown")
+    except ValueError:
+        await message.answer("⚠️ *Invalid input!*\n\n"
+                             "Please enter a valid number. Example: `/setage 30`",
+                             parse_mode="Markdown")
+
+@commandsrouter.message(Command("setgender"))
+async def set_gender(message: types.Message):
+    """Handles setting the user's gender in Firebase."""
+    user_id = str(message.from_user.id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("🚻 *Set Your Gender*\n\n"
+                             "Please enter your gender (Male/Female/Other).\n"
+                             "Example: `/setgender Male`",
+                             parse_mode="Markdown")
+        return
+
+    gender = parts[1].capitalize()
+    if gender not in ["Male", "Female", "Other"]:
+        await message.answer("⚠️ *Invalid input!*\n\n"
+                             "Please enter `Male`, `Female`, or `Other`.\n"
+                             "Example: `/setgender Male`",
+                             parse_mode="Markdown")
+        return
+
+    db.collection("users").document(user_id).update({"gender": gender})
+
+    await message.answer(f"✅ *Gender Updated!*\n\n"
+                         f"🚻 Your gender is now *{gender}*.",
+                         parse_mode="Markdown")

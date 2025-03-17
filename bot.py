@@ -8,13 +8,13 @@ from datetime import datetime
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+# from fastapi import FastAPI, Request
+# from fastapi.responses import JSONResponse
 from firebase_config import db, get_users_with_retry  # Firebase Firestore instance
 
 from ai_manager import generate_encouragement, chat_with_ai
 from schedule_manager import send_scheduled_messages, cache_encouragements
-from commands import commandsrouter as commands_router  # Rename to avoid conflicts
+
 from web_app import app  # Import FastAPI app after defining it
 import uvicorn  # Ensure it's imported after `web_app`
 
@@ -52,29 +52,15 @@ from commands import commandsrouter as commands_router  # Rename to avoid confli
 
 dp.include_router(bmi_router)
 dp.include_router(commands_router)
-bot_router = Router()
 
 
 
 
-# Custom error handler for FastAPI
-@app.exception_handler(Exception)
-async def unicorn_exception_handler(request: Request, exc: Exception):
-    # Log the exception
-    logger.error(f"Unhandled exception occurred: {exc}", exc_info=True)
 
-    # Return a generic message to the user
-    return JSONResponse(
-        status_code=500,
-        content={"message": "Internal server error, please try again later."},
-    )
-
-
-
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    logger.error(f"An unexpected error occurred: {exc}", exc_info=True)
-    return JSONResponse({"error": "An unexpected error occurred"}, status_code=500)
+# @app.exception_handler(Exception)
+# async def general_exception_handler(request: Request, exc: Exception):
+#     logger.error(f"An unexpected error occurred: {exc}", exc_info=True)
+#     return JSONResponse({"error": "An unexpected error occurred"}, status_code=500)
 
 async def send_message_with_split(user_id, text):
     """Send a long message in chunks if needed."""
@@ -365,82 +351,6 @@ async def set_fasting(message: types.Message):
 
 
 
-@bot_router.message(Command("setheight"))
-async def set_height(message: types.Message):
-    """Handles setting the user's height in Firebase."""
-    user_id = str(message.from_user.id)
-    parts = message.text.split()
-
-    if len(parts) < 2:
-        await message.answer("📏 *Set Your Height*\n\n"
-                             "Please enter your height in cm.\n"
-                             "Example: `/setheight 175`",
-                             parse_mode="Markdown")
-        return
-
-    try:
-        height = int(parts[1])
-        db.collection("users").document(user_id).update({"height": height})
-
-        await message.answer(f"✅ *Height Updated!*\n\n"
-                             f"📏 Your height is now *{height} cm*.",
-                             parse_mode="Markdown")
-    except ValueError:
-        await message.answer("⚠️ *Invalid input!*\n\n"
-                             "Please enter a valid number. Example: `/setheight 175`",
-                             parse_mode="Markdown")
-
-@bot_router.message(Command("setage"))
-async def set_age(message: types.Message):
-    """Handles setting the user's age in Firebase."""
-    user_id = str(message.from_user.id)
-    parts = message.text.split()
-
-    if len(parts) < 2:
-        await message.answer("🎂 *Set Your Age*\n\n"
-                             "Please enter your age.\n"
-                             "Example: `/setage 30`",
-                             parse_mode="Markdown")
-        return
-
-    try:
-        age = int(parts[1])
-        db.collection("users").document(user_id).update({"age": age})
-
-        await message.answer(f"✅ *Age Updated!*\n\n"
-                             f"🎂 Your age is now *{age}* years old.",
-                             parse_mode="Markdown")
-    except ValueError:
-        await message.answer("⚠️ *Invalid input!*\n\n"
-                             "Please enter a valid number. Example: `/setage 30`",
-                             parse_mode="Markdown")
-
-@bot_router.message(Command("setgender"))
-async def set_gender(message: types.Message):
-    """Handles setting the user's gender in Firebase."""
-    user_id = str(message.from_user.id)
-    parts = message.text.split()
-
-    if len(parts) < 2:
-        await message.answer("🚻 *Set Your Gender*\n\n"
-                             "Please enter your gender (Male/Female/Other).\n"
-                             "Example: `/setgender Male`",
-                             parse_mode="Markdown")
-        return
-
-    gender = parts[1].capitalize()
-    if gender not in ["Male", "Female", "Other"]:
-        await message.answer("⚠️ *Invalid input!*\n\n"
-                             "Please enter `Male`, `Female`, or `Other`.\n"
-                             "Example: `/setgender Male`",
-                             parse_mode="Markdown")
-        return
-
-    db.collection("users").document(user_id).update({"gender": gender})
-
-    await message.answer(f"✅ *Gender Updated!*\n\n"
-                         f"🚻 Your gender is now *{gender}*.",
-                         parse_mode="Markdown")
 
 @dp.message(Command("setmeals"))
 async def set_meals(message: types.Message):
@@ -539,7 +449,6 @@ async def set_bot_commands():
 
 
 
-dp.include_router(bot_router)  # ✅ Register before starting bot
 
 async def main():
     """Main async function."""
@@ -547,21 +456,16 @@ async def main():
     await set_bot_commands()  
     asyncio.create_task(send_scheduled_messages(bot))  
     asyncio.create_task(cache_encouragements())  
+    asyncio.create_task(run_web_server())  # ✅ Start web server async
 
     logger.info("Bot is starting polling...")
-    bot_task = asyncio.create_task(dp.start_polling(bot))
-    
-    # ✅ Run FastAPI server in a separate thread instead of async loop
-    loop = asyncio.get_running_loop()
-    loop.run_in_executor(None, run_web_server)  
+    await dp.start_polling(bot)  # ✅ This is the main blocking task
 
-    await bot_task  # Only await bot polling
-
-def run_web_server():
-    """Run FastAPI server (blocking)."""
+async def run_web_server():
+    """Run FastAPI server asynchronously."""
     config = uvicorn.Config(app, host="0.0.0.0", port=8080, log_level="debug")
     server = uvicorn.Server(config)
-    server.run()  # ✅ Run in a separate thread instead of blocking `asyncio`
+    await server.serve()  # ✅ Proper async execution
 
 # ✅ Run bot using asyncio
 if __name__ == "__main__":
