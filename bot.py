@@ -5,7 +5,7 @@ import pytz
 import logging
 import aiogram
 from datetime import datetime
-from aiogram import Bot, Dispatcher, types, Router, F
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 # from fastapi import FastAPI, Request
@@ -50,8 +50,7 @@ dp = Dispatcher()
 from bmi_handler import bmirouter as bmi_router
 from commands import commandsrouter as commands_router  # Rename to avoid conflicts
 
-dp.include_router(bmi_router)
-dp.include_router(commands_router)
+dp.include_routers(bmi_router, commands_router)
 
 
 
