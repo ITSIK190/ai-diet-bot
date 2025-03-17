@@ -215,3 +215,5 @@ def register_handlers(router: Router):
         await message.answer("✅ Test command works!")
 
 register_handlers(commandsrouter)
+
+

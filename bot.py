@@ -13,7 +13,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from firebase_config import db, get_users_with_retry  # Firebase Firestore instance
 
 from ai_manager import generate_encouragement, chat_with_ai
-from schedule_manager import send_scheduled_messages, cache_encouragements
+from schedule_manager import send_scheduled_messages, cache_encouragements_loop
 
 #from web_app import app  # Import FastAPI app after defining it
 import uvicorn  # Ensure it's imported after `web_app`
@@ -455,7 +455,7 @@ async def main():
     logger.info("Bot commands are being set...")
     await set_bot_commands()  
     asyncio.create_task(send_scheduled_messages(bot))  
-    asyncio.create_task(cache_encouragements())  
+    asyncio.create_task(cache_encouragements_loop())
     #asyncio.create_task(run_web_server())  # ✅ Start web server async
     print("Registered routers:", dp.sub_routers)
 

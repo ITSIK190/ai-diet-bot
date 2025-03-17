@@ -5,6 +5,32 @@ from firebase_config import db
 from ai_manager import generate_encouragement
 
 MAX_CACHED_MESSAGES = 5  # Number of pre-generated messages per user
+update_encouragements_event = asyncio.Event()
+
+async def update_schedule(user_id, new_schedule):
+    """Update schedule and refresh encouragement cache."""
+    # ✅ Save new schedule to Firestore
+    db.collection("users").document(user_id).collection("scheduled_messages").document(new_schedule["id"]).set(new_schedule)
+
+    # ✅ Trigger encouragement cache refresh
+    update_encouragements_event.set()
+
+
+async def cache_encouragements_loop():
+    """Periodically refresh encouragement messages & respond to schedule updates."""
+    while True:
+        await cache_encouragements()  # ✅ Refresh cache
+
+        # ✅ Wait for either the next cycle or an immediate update
+        done, pending = await asyncio.wait(
+            [asyncio.create_task(asyncio.sleep(3600)),  # Refresh every hour
+             asyncio.create_task(update_encouragements_event.wait())],  # Triggered externally
+            return_when=asyncio.FIRST_COMPLETED
+        )
+
+        # ✅ Clear event if it was triggered
+        if update_encouragements_event.is_set():
+            update_encouragements_event.clear()
 
 async def get_users_with_schedules():
     """Fetch all users who have scheduled encouragements."""
