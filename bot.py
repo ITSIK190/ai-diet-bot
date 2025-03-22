@@ -15,7 +15,7 @@ from keyboards import get_start_keyboard  # ✅ Import keyboard from new file
 
 
 from ai_manager import generate_encouragement, chat_with_ai
-from schedule_manager import send_scheduled_messages, cache_encouragements_loop
+from schedule_manager import send_scheduled_messages
 
 #from web_app import app  # Import FastAPI app after defining it
 import uvicorn  # Ensure it's imported after `web_app`
@@ -80,30 +80,30 @@ async def send_message_with_split(user_id, text):
 
 
 
-# ⏰ Scheduled Message Sender
-async def send_scheduled_messages(bot):  # Now expects bot
-    timezone = pytz.timezone("Asia/Jerusalem")
+# # ⏰ Scheduled Message Sender
+# async def send_scheduled_messages(bot):  # Now expects bot
+#     timezone = pytz.timezone("Asia/Jerusalem")
     
-    while True:
-        now = datetime.now(timezone).strftime("%H:%M")
+#     while True:
+#         now = datetime.now(timezone).strftime("%H:%M")
 
-        if now == "08:00":
-            users = await get_users_with_retry()
-            if users:  # Only proceed if users were fetched successfully
-                for user in users:
-                    user_id = user.id
-                    user_data = user.to_dict()
-                    user_name = user_data.get("name", "Friend")
+#         if now == "08:00":
+#             users = await get_users_with_retry()
+#             if users:  # Only proceed if users were fetched successfully
+#                 for user in users:
+#                     user_id = user.id
+#                     user_data = user.to_dict()
+#                     user_name = user_data.get("name", "Friend")
 
-                    response = await generate_encouragement(user_id, user_name)
+#                     response = await generate_encouragement(user_id, user_name)
 
-                    try:
-                        await bot.send_message(user_id, response)  # ✅ bot is passed
-                        await asyncio.sleep(1)  # Prevent Telegram rate limiting
-                    except Exception as e:
-                        print(f"Telegram Error for user {user_id}: {e}")
+#                     try:
+#                         await bot.send_message(user_id, response)  # ✅ bot is passed
+#                         await asyncio.sleep(1)  # Prevent Telegram rate limiting
+#                     except Exception as e:
+#                         print(f"Telegram Error for user {user_id}: {e}")
 
-        await asyncio.sleep(60)  # Check every minute
+#         await asyncio.sleep(60)  # Check every minute
 
         
 
@@ -279,15 +279,8 @@ async def main():
     logger.info("Bot commands are being set...")
     await set_bot_commands()  
     asyncio.create_task(send_scheduled_messages(bot))  
-    asyncio.create_task(cache_encouragements_loop())
     asyncio.create_task(run_web_server())  # ✅ Start web server async
     print("Registered routers:", dp.sub_routers)
-
-    print("📌 Registered handlers:")
-    for router in dp.sub_routers:
-        print(router.__dict__)  # This will show all commands & handlers
-    print(dp.resolve_used_update_types())
-    logger.info("Bot is starting polling...")
     logger.info(f"Running aiogram version: {aiogram.__version__}")
     await dp.start_polling(bot)  # ✅ This is the main blocking task
 

@@ -1,5 +1,6 @@
 import os
 import json
+import tempfile
 import base64
 import asyncio
 from google.cloud import firestore
@@ -12,7 +13,7 @@ firebase_credentials_b64 = os.getenv("FIREBASE_CREDENTIALS")
 if not firebase_credentials_b64:
     raise ValueError("FIREBASE_CREDENTIALS is not set or invalid.")
 
-firebase_json_path = "/tmp/firebase_creds.json"  # Save credentials in a temp file
+firebase_json_path = os.path.join(tempfile.gettempdir(), "firebase_creds.json") # Save credentials in a temp file
 try:
     firebase_credentials_json = base64.b64decode(firebase_credentials_b64).decode("utf-8")
     with open(firebase_json_path, "w") as f:

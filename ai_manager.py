@@ -3,6 +3,57 @@ import os
 from firebase_config import db
 from huggingface_hub import InferenceClient
 from gradio_client import Client
+from hugchat import hugchat
+from hugchat.login import Login
+
+
+# Retrieve credentials from environment variables
+EMAIL = os.getenv("hf_email")
+PASSWORD = os.getenv("hf_pw")
+
+# Define cookie storage directory
+cookie_path_dir = "./cookies/"  # NOTE: trailing slash is required
+
+# Ensure credentials are provided
+if not EMAIL or not PASSWORD:
+    raise ValueError("Hugging Face email and password must be set as environment variables!")
+
+# Login and retrieve cookies
+sign = Login(EMAIL, PASSWORD)
+cookies = sign.login(cookie_dir_path=cookie_path_dir, save_cookies=True)
+
+# Initialize HuggingChat with authenticated cookies
+chatbot = hugchat.ChatBot(cookies=cookies.get_dict())
+
+def chat_with_huggingchat(prompt: str) -> str:
+    """Send a message to HuggingChat and return the response."""
+    response = chatbot.chat(prompt).wait_until_done()
+    return response
+
+async def generate_huggingchat_response(prompt):
+    """Generate a response using the HuggingChat API."""
+    try:
+        print(f"🔹 Sending to HuggingChat: {prompt}")  # Debug log
+
+        # Call the HuggingChat API asynchronously
+        response = await asyncio.to_thread(chatbot.chat, prompt)
+
+        if not response or not isinstance(response, str):
+            print("⚠️ HuggingChat Response was invalid or empty.")
+            return "I couldn't process your request. Please try again!"
+
+        print(f"✅ HuggingChat Response: {response.strip()}")  # Debug log
+        return response.strip()
+
+    except Exception as e:
+        print(f"❌ Error communicating with HuggingChat: {e}")
+        return "Sorry, something went wrong! Please try again later."
+
+
+# Authenticate and save cookies
+sign = Login(EMAIL, PASSWORD)
+cookies = sign.login()
+sign.saveCookiesToDir()
 
 # 🔹 Hugging Face Configuration
 HF_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
@@ -13,6 +64,7 @@ def truncate_text(text, max_words=30):
     """Truncate text to a maximum number of words."""
     words = text.split()
     return " ".join(words[:max_words]) + ("..." if len(words) > max_words else "")
+
 
 async def chat_with_ai(prompt):
     """Send user message to Hugging Face model and return response."""
@@ -60,3 +112,37 @@ async def generate_encouragement(user_id, user_name):
         prompt = f"Give {user_name} a short, highly motivating message about staying healthy and fit. Keep it under 20 words."
 
     return await chat_with_ai(prompt)
+
+
+
+# Initialize the new Hugging Face client
+chatgpt_client = Client("yuntian-deng/ChatGPT")
+
+async def generate_chatgpt_response(user_message):
+    """Generates a response using the yuntian-deng/ChatGPT Hugging Face model."""
+    try:
+        print(f"🔹 Sending to HF ChatGPT: {user_message}")  # Debug log
+
+        # Run the synchronous `predict()` method in a separate thread
+        response = await asyncio.to_thread(
+            chatgpt_client.predict,
+            user_message,  # inputs
+            1,  # top_p
+            1,  # temperature
+            0,  # chat_counter
+            [],  # chatbot (empty history)
+            api_name="/predict"
+        )
+
+        if not response or not isinstance(response, str):
+            print("⚠️ HF ChatGPT Response was invalid or empty.")  
+            return "I couldn't process your request. Please try again!"
+
+        truncated_response = truncate_text(response.strip(), max_words=30)
+
+        print(f"✅ HF ChatGPT Response: {truncated_response}")  # Debug log
+        return truncated_response
+
+    except Exception as e:
+        print(f"❌ Error communicating with HF ChatGPT: {e}")
+        return "Sorry, something went wrong! Please try again later."

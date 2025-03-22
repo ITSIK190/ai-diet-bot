@@ -5,7 +5,7 @@ from aiogram.filters import Command
 from firebase_config import db
 from ai_manager import generate_encouragement, chat_with_ai
 from keyboards import get_start_keyboard  # ✅ Import keyboard from new file
-
+from ai_manager import generate_chatgpt_response,generate_huggingchat_response,chat_with_huggingchat   # Import the function
 
 MAX_SCHEDULES = 10
 commandsrouter = Router(name="commandsrouter")
@@ -31,13 +31,14 @@ async def view_schedules(message: Message):
     schedule_list = []
     for schedule in schedules:
         data = schedule.to_dict()
-        schedule_list.append(f"\U0001F551 {data['time']} - {data['comment']} ({len(data.get('cached_encouragements', []))}/5 cached)")
+        schedule_list.append(f"\U0001F551 {data['time']} - {data['comment']}")
 
     response = "\n".join(schedule_list) if schedule_list else "You have no scheduled encouragements. Add one with /addschedule"
 
     keyboard = get_schedules_keyboard()  # Attach keyboard to message
     await message.answer(response)
-    # await message.answer(response, reply_markup=keyboard)
+    # await message.answer(response, reply_markup=keyboard)  # Uncomment if keyboard is needed
+
 
 @commandsrouter.message(Command("addschedule"))
 async def add_schedule(message: Message):
@@ -60,8 +61,9 @@ async def add_schedule(message: Message):
         await message.answer("⚠️ Invalid time format! Use HH:MM (e.g., 08:00)")
         return
 
-    schedules_ref.add({"time": time_str, "comment": comment, "cached_encouragements": []})
+    schedules_ref.add({"time": time_str, "comment": comment})
     await message.answer(f"✅ Added schedule for {time_str} - {comment}")
+
 
 @commandsrouter.message(Command("deleteschedule"))
 async def delete_schedule(message: Message):
@@ -125,7 +127,8 @@ async def edit_schedule(message: Message):
 
 @commandsrouter.message(Command("test"))
 async def test_command(message: Message):
-    await message.answer("Test command works!")
+    response = chat_with_huggingchat("Give me a short encouragement for dieting.")
+    await message.answer(response)
 
 
 

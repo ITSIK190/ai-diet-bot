@@ -1,98 +1,55 @@
 import asyncio
 import pytz
 from datetime import datetime
-from firebase_config import db
-from ai_manager import generate_encouragement
+from ai_manager import chat_with_huggingchat, generate_encouragement  # Directly use HuggingChat
+from firebase_config import db, get_users_with_retry 
 
-MAX_CACHED_MESSAGES = 5  # Number of pre-generated messages per user
-update_encouragements_event = asyncio.Event()
 
 async def update_schedule(user_id, new_schedule):
-    """Update schedule and refresh encouragement cache."""
-    # ✅ Save new schedule to Firestore
+    """Update schedule in Firestore."""
     db.collection("users").document(user_id).collection("scheduled_messages").document(new_schedule["id"]).set(new_schedule)
 
-    # ✅ Trigger encouragement cache refresh
-    update_encouragements_event.set()
-
-
-async def cache_encouragements_loop():
-    """Periodically refresh encouragement messages & respond to schedule updates."""
-    while True:
-        await cache_encouragements()  # ✅ Refresh cache
-
-        # ✅ Wait for either the next cycle or an immediate update
-        done, pending = await asyncio.wait(
-            [asyncio.create_task(asyncio.sleep(3600)),  # Refresh every hour
-             asyncio.create_task(update_encouragements_event.wait())],  # Triggered externally
-            return_when=asyncio.FIRST_COMPLETED
-        )
-
-        # ✅ Clear event if it was triggered
-        if update_encouragements_event.is_set():
-            update_encouragements_event.clear()
-
 async def get_users_with_schedules():
-    """Fetch all users who have scheduled encouragements."""
+    """Fetch all users with scheduled messages."""
     users = db.collection("users").stream()
-    scheduled_users = []
-    for user in users:
-        user_id = user.id
-        schedules = db.collection("users").document(user_id).collection("scheduled_messages").stream()
-        if any(schedules):  # Only add users who have schedules
-            scheduled_users.append(user)
-    return scheduled_users
-
-async def cache_encouragements():
-    """Ensures each user's schedules have 5 pre-generated encouragement messages."""
-    users = await get_users_with_schedules()
-    for user in users:
-        user_id = user.id
-        schedules = db.collection("users").document(user_id).collection("scheduled_messages").stream()
-        
-        for schedule in schedules:
-            schedule_id = schedule.id
-            schedule_data = schedule.to_dict()
-            cached_encouragements = schedule_data.get("cached_encouragements", [])
-
-            # Fill up to 5 messages
-            while len(cached_encouragements) < MAX_CACHED_MESSAGES:
-                user_name = user.to_dict().get("name", "Friend")
-                new_message = await generate_encouragement(user_id, user_name)
-                cached_encouragements.append(new_message)
-
-            # Update Firestore
-            db.collection("users").document(user_id).collection("scheduled_messages").document(schedule_id).update({
-                "cached_encouragements": cached_encouragements
-            })
-
-    print("✅ Encouragement messages cached successfully!")
+    return [user for user in users if db.collection("users").document(user.id).collection("scheduled_messages").stream()]
 
 async def send_scheduled_messages(bot):
-    """Send pre-generated messages at the scheduled time."""
-    timezone = pytz.timezone("Asia/Jerusalem")
-
+    """Send both user-defined and fixed-time encouragement messages."""
+    timezone = pytz.timezone("Asia/Jerusalem")  # ✅ Fixed timezone for now
+    
     while True:
-        now = datetime.now(timezone).strftime("%H:%M")
-        users = await get_users_with_schedules()
+        now = datetime.now(timezone).strftime("%H:%M")  # ✅ Get current time in Asia/Jerusalem
 
-        for user in users:
-            user_id = user.id
-            schedules = db.collection("users").document(user_id).collection("scheduled_messages").stream()
+        users = await get_users_with_retry()  # ✅ Fetch all users
 
-            for schedule in schedules:
-                schedule_id = schedule.id
-                schedule_data = schedule.to_dict()
-                scheduled_time = schedule_data.get("time")
-                cached_encouragements = schedule_data.get("cached_encouragements", [])
+        if users:  
+            for user in users:
+                user_id = user.id
+                user_data = user.to_dict()
+                user_name = user_data.get("name", "Friend")
 
-                if scheduled_time == now and cached_encouragements:
-                    # ✅ Create a separate task for sending messages to prevent blocking
-                    asyncio.create_task(bot.send_message(user_id, cached_encouragements.pop(0)))
+                # ✅ Send the global 08:00 encouragement message
+                if now == "08:00":
+                    response = await generate_encouragement(user_id, user_name)
+                    try:
+                        await bot.send_message(user_id, response)
+                        await asyncio.sleep(1)  # ✅ Prevent Telegram rate limiting
+                    except Exception as e:
+                        print(f"Telegram Error for user {user_id}: {e}")
 
-                    # ✅ Update Firestore after removing the used message
-                    db.collection("users").document(user_id).collection("scheduled_messages").document(schedule_id).update({
-                        "cached_encouragements": cached_encouragements
-                    })
+                # ✅ Send user-scheduled messages
+                schedules = list(db.collection("users").document(user_id).collection("scheduled_messages").stream())
 
-        await asyncio.sleep(60)  # ✅ Sleep inside loop to prevent high CPU usage
+                for schedule in schedules:
+                    schedule_data = schedule.to_dict() or {}
+                    scheduled_time = schedule_data.get("time", "").strip()
+
+                    if scheduled_time == now:
+                        message = chat_with_huggingchat(f"Give {user_name} a short encouragement for dieting.")
+                        try:
+                            await bot.send_message(user_id, message)
+                        except Exception as e:
+                            print(f"Error sending scheduled message to {user_id}: {e}")
+
+        await asyncio.sleep(60)  # ✅ Check every minute
