@@ -30,13 +30,35 @@ def chat_with_huggingchat(prompt: str) -> str:
     response = chatbot.chat(prompt).wait_until_done()
     return response
 
-async def generate_huggingchat_response(prompt):
-    """Generate a response using the HuggingChat API."""
+async def generate_huggingchat_response(user_id, prompt):
+    """Generate a response using the HuggingChat API with user-specific context."""
     try:
-        print(f"🔹 Sending to HuggingChat: {prompt}")  # Debug log
+        # 🔹 Fetch user data from Firestore
+        user_doc = db.collection("users").document(user_id).get()
+        if not user_doc.exists:
+            print(f"⚠️ No user data found for {user_id}.")
+            return "I couldn't retrieve your details. Please set up your profile first."
 
-        # Call the HuggingChat API asynchronously
-        response = await asyncio.to_thread(chatbot.chat, prompt)
+        user_data = user_doc.to_dict() or {}
+        user_name = user_data.get("name", "Friend")
+        weight = user_data.get("weight", "unknown")
+        height = user_data.get("height", "unknown")
+        diet = user_data.get("diet", "not specified")
+        goal_weight = user_data.get("goal_weight", "not set")
+
+        # 🔹 Construct a more informative prompt for the AI
+        context = (
+            f"You are {user_name}'s personal dietitian. "
+            f"{user_name} follows a {diet} diet. "
+            f"Their current weight is {weight} kg, and their height is {height} cm. "
+            f"Their goal is to reach {goal_weight} kg. "
+            f"Now respond to the following request: {prompt}"
+        )
+
+        print(f"🔹 Sending to HuggingChat: {context}")  # Debug log
+
+        # 🔹 Call the HuggingChat API asynchronously
+        response = await asyncio.to_thread(chatbot.chat, context)
 
         if not response or not isinstance(response, str):
             print("⚠️ HuggingChat Response was invalid or empty.")
@@ -48,6 +70,7 @@ async def generate_huggingchat_response(prompt):
     except Exception as e:
         print(f"❌ Error communicating with HuggingChat: {e}")
         return "Sorry, something went wrong! Please try again later."
+
 
 
 # Authenticate and save cookies

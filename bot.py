@@ -76,41 +76,9 @@ async def send_message_with_split(user_id, text):
 
 
 
-
-
-
-
-# # ⏰ Scheduled Message Sender
-# async def send_scheduled_messages(bot):  # Now expects bot
-#     timezone = pytz.timezone("Asia/Jerusalem")
-    
-#     while True:
-#         now = datetime.now(timezone).strftime("%H:%M")
-
-#         if now == "08:00":
-#             users = await get_users_with_retry()
-#             if users:  # Only proceed if users were fetched successfully
-#                 for user in users:
-#                     user_id = user.id
-#                     user_data = user.to_dict()
-#                     user_name = user_data.get("name", "Friend")
-
-#                     response = await generate_encouragement(user_id, user_name)
-
-#                     try:
-#                         await bot.send_message(user_id, response)  # ✅ bot is passed
-#                         await asyncio.sleep(1)  # Prevent Telegram rate limiting
-#                     except Exception as e:
-#                         print(f"Telegram Error for user {user_id}: {e}")
-
-#         await asyncio.sleep(60)  # Check every minute
-
-        
-
-
 @dp.message(Command("setdiet"))
 async def set_diet(message: types.Message):
-    """Set user's diet type."""
+    """Set user's diet type to any string."""
     user_id = str(message.from_user.id)
     parts = message.text.split(maxsplit=1)
 
@@ -118,16 +86,10 @@ async def set_diet(message: types.Message):
         await message.answer("Please specify your diet type. Example: /setdiet keto")
         return
 
-    diet_type = parts[1].strip().capitalize()
-
-    allowed_diets = ["Keto", "Low-Carb", "Mediterranean", "Vegetarian", "Vegan", "Paleo", "Carnivore", "Standard", "Other"]
-
-    if diet_type not in allowed_diets:
-        await message.answer(f"Invalid diet type. Choose from: {', '.join(allowed_diets)}")
-        return
+    diet_type = parts[1].strip()  # Keep the exact input without capitalization
 
     db.collection("users").document(user_id).update({"diet": diet_type})
-    await message.answer(f"Your diet type is set to {diet_type} ✅")
+    await message.answer(f"Your diet type is set to: {diet_type} ✅")
 
 
 @dp.message(Command("setfasting"))
@@ -268,9 +230,6 @@ async def set_bot_commands():
         
     ]
     await bot.set_my_commands(commands)
-
-
-
 
 
 
