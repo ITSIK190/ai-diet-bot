@@ -31,37 +31,34 @@ def chat_with_huggingchat(prompt: str) -> str:
     return response
 
 async def generate_huggingchat_response(user_id, prompt):
-    """Generate a response using the HuggingChat API with user-specific context."""
+    """Generate a response using the HuggingChat API with user details."""
     try:
-        # 🔹 Fetch user data from Firestore
+        # Fetch user data
         user_doc = db.collection("users").document(user_id).get()
-        if not user_doc.exists:
-            print(f"⚠️ No user data found for {user_id}.")
-            return "I couldn't retrieve your details. Please set up your profile first."
-
         user_data = user_doc.to_dict() or {}
+
         user_name = user_data.get("name", "Friend")
+        diet_type = user_data.get("diet", "an unspecified diet")
         weight = user_data.get("weight", "unknown")
         height = user_data.get("height", "unknown")
-        diet = user_data.get("diet", "not specified")
         goal_weight = user_data.get("goal_weight", "not set")
 
-        # 🔹 Construct a more informative prompt for the AI
+        # 🔹 Build improved prompt
         context = (
             f"You are {user_name}'s personal dietitian. "
-            f"{user_name} follows a {diet} diet. "
+            f"{user_name} follows {diet_type}. "
             f"Their current weight is {weight} kg, and their height is {height} cm. "
             f"Their goal is to reach {goal_weight} kg. "
-            f"Now respond to the following request: {prompt}"
         )
+        full_prompt = context + " " + prompt
 
-        print(f"🔹 Sending to HuggingChat: {context}")  # Debug log
+        print(f"🔹 Sending to HuggingChat: {full_prompt}")  # Debug log
 
-        # 🔹 Call the HuggingChat API asynchronously
-        response = await asyncio.to_thread(chatbot.chat, context)
+        # Call the HuggingChat API synchronously inside async function
+        response = await asyncio.to_thread(lambda: chatbot.chat(full_prompt).wait_until_done())
 
         if not response or not isinstance(response, str):
-            print("⚠️ HuggingChat Response was invalid or empty.")
+            print(f"⚠️ Invalid response type: {type(response)} - {response}")
             return "I couldn't process your request. Please try again!"
 
         print(f"✅ HuggingChat Response: {response.strip()}")  # Debug log

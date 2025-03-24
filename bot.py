@@ -7,11 +7,13 @@ import aiogram
 from datetime import datetime
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand, Message
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from firebase_config import db, get_users_with_retry  # Firebase Firestore instance
 from keyboards import get_start_keyboard  # ✅ Import keyboard from new file
+from schedule_manager import send_scheduled_encouragement, send_scheduled_messages
+
 
 
 from ai_manager import generate_encouragement, chat_with_ai
@@ -134,6 +136,34 @@ async def set_fasting(message: types.Message):
     else:
         await message.answer("Intermittent fasting disabled ❌")
 
+
+@dp.message(Command("test"))
+async def test_schedule(message: Message):
+    """Manually test the scheduled encouragement system with a difficulty comment."""
+    
+
+    user_id = str(message.from_user.id)
+    
+    # Check if a comment was provided
+    msg_parts = message.text.split(" ", 1)
+    if len(msg_parts) < 2:
+        await message.answer("⚠️ Usage: `/test Your difficulty comment`", parse_mode="Markdown")
+        return
+
+    comment = msg_parts[1]  # Extract the difficulty comment
+
+    # Fetch user details
+    user_doc = db.collection("users").document(user_id).get()
+    user_data = user_doc.to_dict() or {}
+    user_name = user_data.get("name", "Friend")
+
+    # Simulate the scheduled encouragement
+    try:
+        await send_scheduled_encouragement(bot, user_id, user_name, comment)
+        logging.info("✅ Finished send_scheduled_encouragement()")
+    except Exception as e:
+        print(f"❌ Error testing scheduled message for {user_id}: {e}")
+        await message.answer("❌ An error occurred while testing the scheduled encouragement.")
 
 
 

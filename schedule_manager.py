@@ -5,6 +5,7 @@ from ai_manager import generate_huggingchat_response  # Directly use HuggingChat
 from firebase_config import db, get_users_with_retry 
 
 
+
 async def update_schedule(user_id, new_schedule):
     """Update schedule in Firestore."""
     db.collection("users").document(user_id).collection("scheduled_messages").document(new_schedule["id"]).set(new_schedule)
@@ -16,10 +17,11 @@ async def get_users_with_schedules():
 
 async def send_scheduled_messages(bot):
     """Send user-defined scheduled encouragement messages."""
-    timezone = pytz.timezone("Asia/Jerusalem")  # ✅ Fixed timezone
-
+    timezone = pytz.timezone("Asia/Jerusalem")  # ✅ Fixed timezone for now
+    
     while True:
         now = datetime.now(timezone).strftime("%H:%M")  # ✅ Get current time in Asia/Jerusalem
+
         users = await get_users_with_retry()  # ✅ Fetch all users
 
         if users:
@@ -28,42 +30,69 @@ async def send_scheduled_messages(bot):
                 user_data = user.to_dict()
                 user_name = user_data.get("name", "Friend")
 
-                # ✅ Fetch user-defined scheduled messages
+                # ✅ Fetch user-scheduled messages
                 schedules = list(db.collection("users").document(user_id).collection("scheduled_messages").stream())
-                
-                tasks = []  # ✅ Store async tasks for concurrent execution
-                
+
                 for schedule in schedules:
                     schedule_data = schedule.to_dict() or {}
                     scheduled_time = schedule_data.get("time", "").strip()
+                    comment = schedule_data.get("comment", "").strip()  # 🔹 Get the comment (difficulty)
 
                     if scheduled_time == now:
-                        tasks.append(asyncio.create_task(send_scheduled_encouragement(bot, user_id, user_name)))
-
-                # ✅ Execute all tasks concurrently
-                if tasks:
-                    await asyncio.gather(*tasks)
+                        try:
+                            # 🔹 Pass the comment to the function
+                            await send_scheduled_encouragement(bot, user_id, user_name, comment)
+                        except Exception as e:
+                            print(f"Error sending scheduled message to {user_id}: {e}")
 
         await asyncio.sleep(60)  # ✅ Check every minute
 
 
 
 
+import logging
+import sys
+from hugchat.message import Message  # Ensure Message class is imported
+
+# Make sure logging works across threads
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]  # Forces logs to appear in terminal
+)
+
+
 async def send_scheduled_encouragement(bot, user_id, user_name, comment):
-    """Send user-defined scheduled encouragement messages based on their specific difficulty."""
+    print(f"📤 (Async) Sending encouragement to {user_id} - {user_name}: {comment}")
+    sys.stdout.flush()
+
     try:
-        # 🔹 Enhance the AI prompt with the user's specific difficulty
-        prompt = (
-            f"{user_name} is currently struggling with: {comment}. "
-            f"Provide a short, motivational message that acknowledges this challenge "
-            f"and gives encouragement to stay on track with their diet."
-        )
+        response = await generate_huggingchat_response(user_id, comment)
 
-        # 🔹 Generate AI response
-        message = await generate_huggingchat_response(user_id, prompt)
+        # DEBUG LOGGING
+        print(f"🔹 Response Type: {type(response)}")
+        print(f"🔹 Response Attributes: {dir(response)}")
+        print(f"🔹 Response Value: {response}")
+        sys.stdout.flush()
 
-        # 🔹 Send the message to the user
-        await bot.send_message(user_id, message)
-    
+        # Ensure response is always a string
+        if isinstance(response, str):
+            message_text = response
+        elif isinstance(response, Message):  # Check if it's a Message instance
+            message_text = str(response)  # Force conversion to string
+        elif hasattr(response, "text"):  
+            message_text = response.text  # Extract text if it exists
+        else:
+            message_text = str(response)  # Fallback to string conversion
+
+        print(f"📨 (Async) Processed message: {message_text}")
+        sys.stdout.flush()
+
+        # Send the message
+        await bot.send_message(user_id, message_text)
+        print(f"✅ (Async) Message sent successfully!")
+        sys.stdout.flush()
+
     except Exception as e:
-        print(f"Error sending scheduled message to {user_id}: {e}")
+        print(f"❌ (Async) Error in send_scheduled_encouragement(): {e}")
+        sys.stdout.flush()

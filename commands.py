@@ -6,6 +6,8 @@ from firebase_config import db
 from ai_manager import generate_encouragement, chat_with_ai
 from keyboards import get_start_keyboard  # ✅ Import keyboard from new file
 from ai_manager import generate_chatgpt_response,generate_huggingchat_response,chat_with_huggingchat   # Import the function
+from schedule_manager import send_scheduled_encouragement
+
 
 MAX_SCHEDULES = 10
 commandsrouter = Router(name="commandsrouter")
@@ -125,10 +127,7 @@ async def edit_schedule(message: Message):
     await message.answer(f"✅ Schedule updated to {new_time} - {new_comment}")
 
 
-@commandsrouter.message(Command("test"))
-async def test_command(message: Message):
-    response = chat_with_huggingchat("Give me a short encouragement for dieting.")
-    await message.answer(response)
+
 
 
 
