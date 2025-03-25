@@ -239,8 +239,6 @@ async def handle_chat(message: types.Message):
 
 async def set_bot_commands():
     commands = [
-        BotCommand(command="start", description="Start the bot"),
-        BotCommand(command="help", description="List available commands"),
         BotCommand(command="status", description="View your current progress"),
         BotCommand(command="setgoal", description="Set your target weight"),
         BotCommand(command="logweight", description="Log your current weight"),

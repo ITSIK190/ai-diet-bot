@@ -221,7 +221,11 @@ async def status_command(message: types.Message):
         meals = user_data.get("meals_per_day", "Not set")
         weight = user_data.get("weight", "Unknown")
         goal = user_data.get("goal", "Not set")
-        eating_window = user_data.get("eating_window", "Not set")
+        eating_window = (
+            f"{user_data.get('eating_window', {}).get('start', 'N/A')} - {user_data.get('eating_window', {}).get('stop', 'N/A')}"
+            if user_data.get("fasting", False)
+            else "Not Observed"
+        )
 
         status_text = (
             f"📊 *Your Current Settings:*\n\n"
@@ -234,11 +238,13 @@ async def status_command(message: types.Message):
             "💡 *Tap a button below to update your details!*"
         )
 
-        keyboard = get_start_keyboard(user_id)  
+        keyboard = get_start_keyboard(user_id)  # Uses updated keyboard with Mini App button
 
         await message.answer(status_text, parse_mode="Markdown", reply_markup=keyboard)
+
     else:
         await message.answer("⚠️ No data found. Please use /start to set up your profile.")
+
 
 @commandsrouter.message(Command("setgoal"))
 async def set_goal(message: types.Message):

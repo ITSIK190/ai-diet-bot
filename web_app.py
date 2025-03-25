@@ -62,6 +62,30 @@ async def health_check():
     """Health check endpoint."""
     return JSONResponse({"status": "ok"})
 
+
+@app.get("/mini_app", response_class=HTMLResponse)
+async def serve_mini_app(request: Request, user_id: str = None):
+    logger.info(f"Serving Mini App for user_id: {user_id}")
+
+    if not user_id:
+        return HTMLResponse(content="<h1>Error: Missing user_id</h1>", status_code=400)
+
+    try:
+        html_file = os.path.join(os.path.dirname(__file__), "web_form.html")
+
+        if not os.path.exists(html_file):  
+            return HTMLResponse(content="<h1>Error: web_form.html not found</h1>", status_code=500)
+
+        with open(html_file, "r", encoding="utf-8") as file:
+            html_content = file.read().replace("USER_ID_PLACEHOLDER", user_id)
+
+        return HTMLResponse(content=html_content, status_code=200)
+
+    except Exception as e:
+        logger.error(f"Error serving Mini App: {e}", exc_info=True)
+        return HTMLResponse(content="<h1>Internal Server Error</h1>", status_code=500)
+
+
 # Run FastAPI in Railway (single service, one port)
 # if __name__ == "__main__":
 #     uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")

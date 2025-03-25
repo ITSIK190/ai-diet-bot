@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 BASE_URL = "https://ai-diet-bot-production.up.railway.app/"
 
@@ -18,8 +18,8 @@ def get_start_keyboard(user_id: str):
             InlineKeyboardButton(text="📊 View Status", callback_data="view_status")
         ],
         [
-            InlineKeyboardButton(text="📝 Edit Profile", url=f"{BASE_URL}?user_id={user_id}"),
-            InlineKeyboardButton(text="🚀 Mini App", url=f"{BASE_URL}?user_id={user_id}&mini_app=true")
+            InlineKeyboardButton(text="📝 Edit Profile", web_app=WebAppInfo(url=f"{BASE_URL}?user_id={user_id}")),
+            InlineKeyboardButton(text="🚀 Mini App", web_app=WebAppInfo(url=f"{BASE_URL}?user_id={user_id}&mini_app=true"))
         ]
     ])
     return keyboard

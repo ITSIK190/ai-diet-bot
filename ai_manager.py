@@ -1,10 +1,13 @@
 import asyncio
 import os
+import datetime
+import pytz  # Ensure this is installed: pip install pytz
 from firebase_config import db
 from huggingface_hub import InferenceClient
 from gradio_client import Client
 from hugchat import hugchat
 from hugchat.login import Login
+
 
 
 # Retrieve credentials from environment variables
@@ -30,31 +33,54 @@ def chat_with_huggingchat(prompt: str) -> str:
     response = chatbot.chat(prompt).wait_until_done()
     return response
 
+
+
+
 async def generate_huggingchat_response(user_id, prompt):
     """Generate a response using the HuggingChat API with user details."""
     try:
-        # Fetch user data
+        # Fetch user data from Firestore
         user_doc = db.collection("users").document(user_id).get()
         user_data = user_doc.to_dict() or {}
 
+        # Extract user details
         user_name = user_data.get("name", "Friend")
         diet_type = user_data.get("diet", "an unspecified diet")
         weight = user_data.get("weight", "unknown")
-        height = user_data.get("height", "unknown")
-        goal_weight = user_data.get("goal_weight", "not set")
+        goal_weight = user_data.get("goal", "not set")
+        meals_per_day = user_data.get("meals_per_day", "unknown")
 
-        # 🔹 Build improved prompt
+        # Handle fasting details
+        fasting = user_data.get("fasting", False)
+        eating_window = user_data.get("eating_window", {})
+        fasting_start = eating_window.get("start", None)
+        fasting_end = eating_window.get("stop", None)
+
+        # Get current time in Israel Time (IST)
+        israel_tz = pytz.timezone("Asia/Jerusalem")
+        current_time = datetime.datetime.now(israel_tz).strftime("%H:%M")
+
+        # 🔹 Build AI prompt context
         context = (
             f"You are {user_name}'s personal dietitian. "
-            f"{user_name} follows {diet_type}. "
-            f"Their current weight is {weight} kg, and their height is {height} cm. "
-            f"Their goal is to reach {goal_weight} kg. "
+            f"{user_name} follows a {diet_type} diet and weighs {weight} kg, aiming for {goal_weight} kg. "
+            f"They eat {meals_per_day} meals per day. "
         )
+
+        if fasting and fasting_start and fasting_end:
+            context += f"They practice intermittent fasting from {fasting_start} to {fasting_end}. "
+
+        context += (
+            f"The time now in Israel is {current_time}. "
+            f"Generate a highly personal and short (≤30 words) motivation message including their name and another detail. "
+            f"Make sure they stay on track and don’t deviate from their diet."
+        )
+
         full_prompt = context + " " + prompt
 
         print(f"🔹 Sending to HuggingChat: {full_prompt}")  # Debug log
 
-        # Call the HuggingChat API synchronously inside async function
+        # Call the HuggingChat API asynchronously
         response = await asyncio.to_thread(lambda: chatbot.chat(full_prompt).wait_until_done())
 
         if not response or not isinstance(response, str):
@@ -67,6 +93,9 @@ async def generate_huggingchat_response(user_id, prompt):
     except Exception as e:
         print(f"❌ Error communicating with HuggingChat: {e}")
         return "Sorry, something went wrong! Please try again later."
+
+
+
 
 
 
