@@ -3,106 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile Page</title>
+    <title>User Profile</title>
 </head>
 <body>
-    <form id="profile-form">
+    <h1>Edit Profile</h1>
+
+    <form action="/update_user" method="POST" id="profile-form">
+        <input type="hidden" name="user_id" value="{{ user_id }}">
+
+        <label for="user_name">Name:</label>
+        <input type="text" id="user_name" name="name" value="{{ user_name }}"><br><br>
+
+        <label for="diet_type">Diet Type:</label>
+        <input type="text" id="diet_type" name="diet" value="{{ diet_type }}"><br><br>
+
         <label for="weight">Weight (kg):</label>
-        <input type="text" id="weight" name="weight" />
+        <input type="number" id="weight" name="weight" value="{{ weight }}"><br><br>
 
-        <label for="goal">Goal (kg):</label>
-        <input type="text" id="goal" name="goal" />
-
-        <label for="diet">Diet:</label>
-        <input type="text" id="diet" name="diet" />
-
-        <label for="fasting">Fasting:</label>
-        <input type="checkbox" id="fasting" name="fasting" />
+        <label for="goal_weight">Goal Weight (kg):</label>
+        <input type="number" id="goal_weight" name="goal" value="{{ goal_weight }}"><br><br>
 
         <label for="meals_per_day">Meals per day:</label>
-        <input type="number" id="meals_per_day" name="meals_per_day" />
+        <input type="number" id="meals_per_day" name="meals_per_day" value="{{ meals_per_day }}"><br><br>
 
-        <label for="eating_window_start">Eating window start:</label>
-        <input type="time" id="eating_window_start" name="eating_window_start" />
+        <label for="fasting_start">Fasting Start:</label>
+        <input type="time" id="fasting_start" name="fasting_start" value="{{ fasting_start }}"><br><br>
 
-        <label for="eating_window_stop">Eating window stop:</label>
-        <input type="time" id="eating_window_stop" name="eating_window_stop" />
+        <label for="fasting_end">Fasting End:</label>
+        <input type="time" id="fasting_end" name="fasting_end" value="{{ fasting_end }}"><br><br>
 
-        <button type="button" onclick="saveProfile()">Save Profile</button>
+        <button type="submit">Update Profile</button>
     </form>
 
     <script>
-        async function loadProfile() {
-            const tg = window.Telegram.WebApp;
-            tg.expand();  // Ensure the WebApp expands to full screen
-    
-            const userId = tg.initDataUnsafe?.user?.id;  // Get user ID from Telegram
-    
-            if (!userId) {
-                alert("Error: User ID missing!");
-                return;
-            }
-    
-            try {
-                const response = await fetch(`https://ai-diet-bot-production.up.railway.app/get_user?user_id=${userId}`);
-                
-                if (!response.ok) throw new Error(`API error: ${response.status}`);
-    
-                const userData = await response.json();
-    
-                // Prefill form
-                document.getElementById("weight").value = userData.weight || "";
-                document.getElementById("goal").value = userData.goal || "";
-                document.getElementById("diet").value = userData.diet || "";
-                document.getElementById("fasting").checked = userData.fasting;
-                document.getElementById("meals_per_day").value = userData.meals_per_day || "";
-                document.getElementById("eating_window_start").value = userData.eating_window?.start || "";
-                document.getElementById("eating_window_stop").value = userData.eating_window?.stop || "";
-    
-            } catch (error) {
-                console.error("Failed to load user profile:", error);
-                alert("Failed to load profile. Please check your connection.");
-            }
-        }
-    
-        async function saveProfile() {
-            const tg = window.Telegram.WebApp;
-            const userId = tg.initDataUnsafe?.user?.id;
-    
-            const data = {
-                user_id: userId,
-                weight: document.getElementById("weight").value,
-                goal: document.getElementById("goal").value,
-                diet: document.getElementById("diet").value,
-                fasting: document.getElementById("fasting").checked,
-                meals_per_day: document.getElementById("meals_per_day").value,
-                eating_window: {
-                    start: document.getElementById("eating_window_start").value,
-                    stop: document.getElementById("eating_window_stop").value
-                }
-            };
-    
-            try {
-                const response = await fetch("https://ai-diet-bot-production.up.railway.app/update_user", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data),
-                });
-    
-                if (!response.ok) throw new Error(`API error: ${response.status}`);
-    
-                alert("Profile updated successfully!");
-                tg.close();  // Close the WebApp after saving
-    
-            } catch (error) {
-                console.error("Failed to update profile:", error);
-                alert("Failed to update profile. Please try again.");
-            }
-        }
-    
-        // Load profile when Telegram WebApp is ready
-        window.addEventListener("DOMContentLoaded", loadProfile);
+        // Simple form submission handling
+        document.getElementById("profile-form").onsubmit = async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            const response = await fetch("/update_user", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+            alert(result.message || result.error);
+        };
     </script>
-    
 </body>
 </html>

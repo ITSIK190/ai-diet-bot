@@ -36,6 +36,7 @@ def chat_with_huggingchat(prompt: str) -> str:
 
 
 
+
 async def generate_huggingchat_response(user_id, prompt):
     """Generate a response using the HuggingChat API with user details."""
     try:
@@ -72,11 +73,11 @@ async def generate_huggingchat_response(user_id, prompt):
 
         context += (
             f"The time now in Israel is {current_time}. "
-            f"Generate a highly personal and short (≤30 words) motivation message including their name and another detail. "
-            f"Make sure they stay on track and don’t deviate from their diet."
+            f"Generate a personal motivation message (≤50 words) including their name, a diet detail, and **answering this prompt**: {prompt} "
+            f"Ensure the response stays relevant to their diet goals and offers practical motivation."
         )
 
-        full_prompt = context + " " + prompt
+        full_prompt = context
 
         print(f"🔹 Sending to HuggingChat: {full_prompt}")  # Debug log
 
@@ -87,8 +88,10 @@ async def generate_huggingchat_response(user_id, prompt):
             print(f"⚠️ Invalid response type: {type(response)} - {response}")
             return "I couldn't process your request. Please try again!"
 
-        print(f"✅ HuggingChat Response: {response.strip()}")  # Debug log
-        return response.strip()
+        clean_response = response.strip().replace("<|im_end|>", "").strip()
+
+        print(f"✅ HuggingChat Response: {clean_response}")  # Debug log
+        return clean_response
 
     except Exception as e:
         print(f"❌ Error communicating with HuggingChat: {e}")
