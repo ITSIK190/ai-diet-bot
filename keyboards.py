@@ -19,7 +19,7 @@ def get_start_keyboard(user_id: str):
         ],
         [
             InlineKeyboardButton(text="📝 Edit Profile", web_app=WebAppInfo(url=f"{BASE_URL}?user_id={user_id}")),
-            InlineKeyboardButton(text="🚀 Mini App", web_app=WebAppInfo(url=f"{BASE_URL}/mini_app?user_id={user_id}"))
+            InlineKeyboardButton(text="🚀 Mini App", web_app=WebAppInfo(url=f"{BASE_URL}mini_app?user_id={user_id}"))
         ]
     ])
     return keyboard
