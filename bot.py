@@ -269,7 +269,7 @@ async def main():
 
 async def run_web_server():
     """Run FastAPI server asynchronously."""
-    config = uvicorn.Config(app, host="0.0.0.0", port=8080, log_level="debug")
+    config = uvicorn.Config("web_app:app", host="0.0.0.0", port=8080, log_level="debug")
     server = uvicorn.Server(config)
     await server.serve()  # ✅ Proper async execution
 
