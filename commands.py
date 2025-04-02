@@ -4,7 +4,7 @@ from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from firebase_config import db
 from keyboards import get_start_keyboard  # ✅ Import keyboard from new file
-from ai_manager import generate_chatgpt_response,generate_huggingchat_response,chat_with_huggingchat   # Import the function
+from ai_manager import generate_huggingchat_response,chat_with_huggingchat   # Import the function
 from schedule_manager import send_scheduled_encouragement
 
 
