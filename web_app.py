@@ -76,16 +76,17 @@ async def serve_mini_app(request: Request, user_id: str = None):
 # Route to handle form submission (updating user data)
 @app.post("/update_user")
 async def update_user(request: Request):
-    form_data = await request.form()  # ✅ Read form data instead of JSON
-    user_id = form_data.get("user_id")
+    data = await request.json()  # ✅ Accept JSON instead of form data
+    user_id = data.get("user_id")
+
     if not user_id:
         return JSONResponse({"error": "Missing user_id"}, status_code=400)
 
-    # Convert form data to a dictionary and update Firestore
-    user_data = dict(form_data)
-    db.collection("users").document(user_id).set(user_data, merge=True)
+    # Update the Firestore document
+    db.collection("users").document(user_id).set(data, merge=True)
 
     return JSONResponse({"message": "Profile updated successfully"})
+
 
 @app.get("/health")
 async def health_check():
