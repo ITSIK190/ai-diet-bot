@@ -3,7 +3,6 @@ from aiogram import Router, types
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from firebase_config import db
-from ai_manager import generate_encouragement, chat_with_ai
 from keyboards import get_start_keyboard  # ✅ Import keyboard from new file
 from ai_manager import generate_chatgpt_response,generate_huggingchat_response,chat_with_huggingchat   # Import the function
 from schedule_manager import send_scheduled_encouragement
@@ -300,13 +299,13 @@ async def log_weight(message: types.Message):
 
 
 
-@commandsrouter.message(Command("m"))
-async def short_encouragement(message: types.Message):
-    """Handles /m command to send motivation."""
-    user_id = str(message.from_user.id)
-    user_name = message.from_user.first_name  # Use Telegram first name
-    response = await generate_encouragement(user_id, user_name)
-    await message.answer(response)
+# @commandsrouter.message(Command("m"))
+# async def short_encouragement(message: types.Message):
+#     """Handles /m command to send motivation."""
+#     user_id = str(message.from_user.id)
+#     user_name = message.from_user.first_name  # Use Telegram first name
+#     response = await generate_encouragement(user_id, user_name)
+#     await message.answer(response)
 
 
 
