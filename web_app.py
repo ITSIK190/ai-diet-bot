@@ -31,13 +31,18 @@ async def serve_mini_app(request: Request, user_id: str = None):
         logger.info(f"User data retrieved: {user_data}")
   
         # Prepare data to populate the form
-        user_name = user_data.get("name", "")
-        diet_type = user_data.get("diet", "")
-        weight = user_data.get("weight", "")
-        goal_weight = user_data.get("goal", "")
-        meals_per_day = user_data.get("meals_per_day", "")
-        fasting_start = user_data.get("eating_window", {}).get("start", "")
-        fasting_end = user_data.get("eating_window", {}).get("stop", "")
+        user_name = user_data.get("name") if user_data.get("name") else "USER_NAME_PLACEHOLDER"
+        diet_type = user_data.get("diet") if user_data.get("diet") else "DIET_TYPE_PLACEHOLDER"
+        weight = str(user_data.get("weight")) if user_data.get("weight") else "WEIGHT_PLACEHOLDER"
+        goal_weight = str(user_data.get("goal")) if user_data.get("goal") else "GOAL_WEIGHT_PLACEHOLDER"
+        meals_per_day = str(user_data.get("meals_per_day")) if user_data.get("meals_per_day") else "MEALS_PER_DAY_PLACEHOLDER"
+        fasting_start = user_data.get("eating_window", {}).get("start") if user_data.get("eating_window", {}).get("start") else "FASTING_START_PLACEHOLDER"
+        fasting_end = user_data.get("eating_window", {}).get("stop") if user_data.get("eating_window", {}).get("stop") else "FASTING_END_PLACEHOLDER"
+        # New fields
+        gender = user_data.get("gender", "")  # Default: blank
+        height = user_data.get("height", "")  # Default: blank
+        exercise_level = user_data.get("exercise_level", "")  # Default: blank
+        
 
         # Define the path to the HTML file (located in the root directory)
         html_file_path = os.path.join(os.path.dirname(__file__), "web_form.html")
@@ -47,14 +52,20 @@ async def serve_mini_app(request: Request, user_id: str = None):
 
         # Read the HTML file and replace the placeholders with user data
         with open(html_file_path, "r", encoding="utf-8") as file:
-            html_content = file.read().replace("USER_ID_PLACEHOLDER", user_id) \
-                                       .replace("USER_NAME_PLACEHOLDER", user_name) \
-                                       .replace("DIET_TYPE_PLACEHOLDER", diet_type) \
-                                       .replace("WEIGHT_PLACEHOLDER", str(weight)) \
-                                       .replace("GOAL_WEIGHT_PLACEHOLDER", str(goal_weight)) \
-                                       .replace("MEALS_PER_DAY_PLACEHOLDER", str(meals_per_day)) \
-                                       .replace("FASTING_START_PLACEHOLDER", fasting_start) \
-                                       .replace("FASTING_END_PLACEHOLDER", fasting_end)
+            html_content = file.read()
+
+        html_content = html_content.replace("{{ user_id }}", user_id if user_id else "")
+        html_content = html_content.replace("{{ user_name }}", user_name if user_name else "")
+        html_content = html_content.replace("{{ diet_type }}", diet_type if diet_type else "")
+        html_content = html_content.replace("{{ weight }}", str(weight) if weight else "")
+        html_content = html_content.replace("{{ goal_weight }}", str(goal_weight) if goal_weight else "")
+        html_content = html_content.replace("{{ meals_per_day }}", str(meals_per_day) if meals_per_day else "")
+        html_content = html_content.replace("{{ fasting_start }}", fasting_start if fasting_start else "")
+        html_content = html_content.replace("{{ fasting_end }}", fasting_end if fasting_end else "")
+        
+        html_content = html_content.replace("{{ gender }}", gender if gender else "")
+        html_content = html_content.replace("{{ height }}", str(height) if height else "")
+        html_content = html_content.replace("{{ exercise_level }}", exercise_level if exercise_level else "")
 
         return HTMLResponse(content=html_content, status_code=200)
 
@@ -65,13 +76,30 @@ async def serve_mini_app(request: Request, user_id: str = None):
 # Route to handle form submission (updating user data)
 @app.post("/update_user")
 async def update_user(request: Request):
-    data = await request.json()
-    user_id = data.get("user_id")
+    form_data = await request.form()  # ✅ Read form data instead of JSON
+    user_id = form_data.get("user_id")
+
     if not user_id:
         return JSONResponse({"error": "Missing user_id"}, status_code=400)
 
-    # Update data in Firestore
-    db.collection("users").document(user_id).set(data, merge=True)
+    # Prepare Firestore update data
+    user_update_data = {
+        "name": form_data.get("name", ""),
+        "diet": form_data.get("diet", ""),
+        "weight": form_data.get("weight", ""),
+        "goal": form_data.get("goal", ""),
+        "meals_per_day": form_data.get("meals_per_day", ""),
+        "eating_window": {
+            "start": form_data.get("fasting_start", ""),
+            "stop": form_data.get("fasting_end", "")
+        },
+        "gender": form_data.get("gender", ""),  # ✅ New field
+        "height": form_data.get("height", ""),  # ✅ New field
+        "exercise_level": form_data.get("exercise_level", "")  # ✅ New field
+    }
+
+    # Update Firestore document
+    db.collection("users").document(user_id).set(user_update_data, merge=True)
 
     return JSONResponse({"message": "Profile updated successfully"})
 

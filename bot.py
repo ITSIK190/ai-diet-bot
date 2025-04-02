@@ -238,7 +238,6 @@ async def set_bot_commands():
         BotCommand(command="status", description="View your current progress"),
         BotCommand(command="setgoal", description="Set your target weight"),
         BotCommand(command="logweight", description="Log your current weight"),
-        BotCommand(command="m", description="Get motivation"),
         BotCommand(command="setdiet", description="setdiet"),
         BotCommand(command="setmeals", description="setmeals"),
         BotCommand(command="setgender", description="setgender"),
