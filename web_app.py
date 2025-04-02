@@ -15,16 +15,21 @@ logger = logging.getLogger(__name__)
 @app.get("/mini_app", response_class=HTMLResponse)
 async def serve_mini_app(request: Request, user_id: str = None):
     if not user_id:
+        logger.error("Missing user_id in request")
         return HTMLResponse(content="<h1>Error: Missing user_id</h1>", status_code=400)
 
+    logger.info(f"Fetching data for user_id: {user_id}")
+
     try:
-        # Fetch user data from Firestore
         user_doc = db.collection("users").document(user_id).get()
         user_data = user_doc.to_dict()
 
         if not user_data:
+            logger.warning(f"User {user_id} not found in Firestore.")
             return HTMLResponse(content="<h1>Error: User not found</h1>", status_code=404)
 
+        logger.info(f"User data retrieved: {user_data}")
+  
         # Prepare data to populate the form
         user_name = user_data.get("name", "")
         diet_type = user_data.get("diet", "")
