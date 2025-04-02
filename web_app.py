@@ -78,28 +78,12 @@ async def serve_mini_app(request: Request, user_id: str = None):
 async def update_user(request: Request):
     form_data = await request.form()  # ✅ Read form data instead of JSON
     user_id = form_data.get("user_id")
-
     if not user_id:
         return JSONResponse({"error": "Missing user_id"}, status_code=400)
 
-    # Prepare Firestore update data
-    user_update_data = {
-        "name": form_data.get("name", ""),
-        "diet": form_data.get("diet", ""),
-        "weight": form_data.get("weight", ""),
-        "goal": form_data.get("goal", ""),
-        "meals_per_day": form_data.get("meals_per_day", ""),
-        "eating_window": {
-            "start": form_data.get("fasting_start", ""),
-            "stop": form_data.get("fasting_end", "")
-        },
-        "gender": form_data.get("gender", ""),  # ✅ New field
-        "height": form_data.get("height", ""),  # ✅ New field
-        "exercise_level": form_data.get("exercise_level", "")  # ✅ New field
-    }
-
-    # Update Firestore document
-    db.collection("users").document(user_id).set(user_update_data, merge=True)
+    # Convert form data to a dictionary and update Firestore
+    user_data = dict(form_data)
+    db.collection("users").document(user_id).set(user_data, merge=True)
 
     return JSONResponse({"message": "Profile updated successfully"})
 
