@@ -1,15 +1,5 @@
 aiogram>=3.0.0
-fastapi
-uvicorn
-firebase-admin
-openai
+openai>=1.0.0
 pytz
-gradio_client
-Flask
-google-cloud-firestore
+aiosqlite
 python-dotenv
-requests
-python-telegram-bot
-hugchat
-hugchat[login]  # For authentication support
-python-multipart
