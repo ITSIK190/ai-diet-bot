@@ -1,4 +1,5 @@
-import asyncio
+﻿import asyncio
+import json
 import logging
 import os
 from datetime import datetime
@@ -10,10 +11,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from local_db import init_db, get_user, save_user, get_schedules, add_schedule, delete_schedule, update_schedule
-from keyboards import (
-    profile_keyboard, gender_keyboard, activity_keyboard,
-    fasting_keyboard, meals_keyboard, cancel_keyboard, schedule_keyboard,
-)
+from keyboards import profile_webapp_keyboard, schedule_keyboard
 from bmi_calculator import calculate_goal_calories
 from ai_manager import generate_response
 from schedule_manager import send_scheduled_messages
@@ -24,18 +22,12 @@ log = logging.getLogger(__name__)
 bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"))
 dp = Dispatcher(storage=MemoryStorage())
 
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://localhost:8080")
+
 user_memory: dict[str, list[dict]] = {}
 
 
 class P(StatesGroup):
-    name = State()
-    age = State()
-    height = State()
-    weight = State()
-    goal = State()
-    diet = State()
-    fasting_start = State()
-    fasting_stop = State()
     sched_time = State()
     sched_comment = State()
     sched_edit_time = State()
@@ -44,7 +36,7 @@ class P(StatesGroup):
 
 def prof(data: dict) -> str:
     if not data:
-        return "No profile yet. Tap a field below to start!"
+        return "No profile yet. Tap Edit Profile below to start!"
     lines = []
     if data.get("name"): lines.append(f"Name: {data['name']}")
     if data.get("age"): lines.append(f"Age: {data['age']}")
@@ -65,10 +57,10 @@ def prof(data: dict) -> str:
         if not data.get(k, 0):
             missing.append(label)
 
-    text = "Your Profile\n\n" + "\n".join(lines) if lines else "Your Profile\n\n(empty)"
+    text = "Profile\n\n" + "\n".join(lines) if lines else "Profile\n\n(empty)"
     if missing:
         text += f"\n\nMissing: {', '.join(missing)}"
-    return text + "\n\nTap a field to update it"
+    return text
 
 
 async def upd(msg, text, **kw):
@@ -93,14 +85,14 @@ async def go_home(message, uid, state=None):
     if state:
         await state.clear()
     data = await get_user(uid)
-    await message.answer(prof(data), reply_markup=profile_keyboard(uid))
+    await message.answer(prof(data), reply_markup=profile_webapp_keyboard(WEBAPP_URL))
 
 
 async def go_home_cb(cb, uid, state=None):
     if state:
         await state.clear()
     data = await get_user(uid)
-    await upd(cb.message, prof(data), reply_markup=profile_keyboard(uid))
+    await upd(cb.message, prof(data), reply_markup=profile_webapp_keyboard(WEBAPP_URL))
 
 
 def add_mem(uid, role, content):
@@ -131,7 +123,7 @@ async def cmd_bmi(message: Message):
     age, gender = d.get("age", 0), d.get("gender", "")
     goal, activity = d.get("goal_kg", 0), d.get("activity", "sedentary")
     if not all([w, h, age, gender, goal]):
-        await message.answer("Missing data! Complete your profile first.", reply_markup=profile_keyboard(uid))
+        await message.answer("Missing data! Complete your profile first.", reply_markup=profile_webapp_keyboard(WEBAPP_URL))
         return
     bmi = w / ((h / 100) ** 2)
     cal = calculate_goal_calories(w, h, age, gender, activity, goal)
@@ -173,13 +165,11 @@ async def cmd_test(message: Message):
     await message.answer(resp)
 
 
-# catch-all -> AI
-@dp.message()
+# catch-all -> AI (only when no FSM state is active)
+@dp.message(F.text)
 async def catch_all(message: Message, state: FSMContext):
-    if await state.get_state():
-        return
     uid = str(message.from_user.id)
-    text = message.text.strip() if message.text else ""
+    text = message.text.strip()
     if not text:
         return
     add_mem(uid, "user", text)
@@ -188,172 +178,42 @@ async def catch_all(message: Message, state: FSMContext):
     await message.answer(resp)
 
 
+# WebApp data handler
+@dp.message(F.web_app_data)
+async def webapp_submit(message: Message):
+    data = json.loads(message.web_app_data.data)
+    uid = str(message.from_user.id)
+    await save_user(uid, {
+        "name": data.get("name", ""),
+        "age": int(data.get("age", 0)),
+        "gender": data.get("gender", ""),
+        "height_cm": int(data.get("height", 0)),
+        "weight_kg": float(data.get("weight", 0)),
+        "goal_kg": float(data.get("goal", 0)),
+        "activity": data.get("activity", "sedentary"),
+        "diet": data.get("diet", ""),
+        "meals_per_day": int(data.get("meals", 0)),
+        "fasting": 1 if data.get("fasting") else 0,
+        "fasting_start": data.get("fasting_start", ""),
+        "fasting_stop": data.get("fasting_stop", ""),
+    })
+    await go_home(message, uid)
+
+
 # Profile callbacks
 @dp.callback_query(F.data.startswith("profile_"))
 async def profile_cb(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
     action = callback.data.split("_", 1)[1]
 
-    if action == "view":
-        await upd(callback.message, prof(await get_user(uid)) + "\n\nTap a field to update it", reply_markup=profile_keyboard(uid))
-    elif action == "back":
+    if action == "back":
         await go_home_cb(callback, uid, state)
     elif action == "bmi":
         await cmd_bmi(callback.message)
-    elif action == "gender":
-        await upd(callback.message, "Select your gender:", reply_markup=gender_keyboard())
-    elif action == "activity":
-        await upd(callback.message, "Select your activity level:", reply_markup=activity_keyboard())
-    elif action == "fasting":
-        await upd(callback.message, "Enable intermittent fasting?", reply_markup=fasting_keyboard())
-    elif action == "meals":
-        await upd(callback.message, "How many meals per day?", reply_markup=meals_keyboard())
-    elif action == "name":
-        await state.clear()
-        await state.set_state(P.name)
-        await upd(callback.message, "Enter your name:", reply_markup=cancel_keyboard())
-    elif action == "age":
-        await state.clear()
-        await state.set_state(P.age)
-        await upd(callback.message, "Enter your age:", reply_markup=cancel_keyboard())
-    elif action == "height":
-        await state.clear()
-        await state.set_state(P.height)
-        await upd(callback.message, "Enter your height in cm:", reply_markup=cancel_keyboard())
-    elif action == "weight":
-        await state.clear()
-        await state.set_state(P.weight)
-        await upd(callback.message, "Enter your weight in kg:", reply_markup=cancel_keyboard())
-    elif action == "goal":
-        await state.clear()
-        await state.set_state(P.goal)
-        await upd(callback.message, "Enter your goal weight in kg:", reply_markup=cancel_keyboard())
-    elif action == "diet":
-        await state.clear()
-        await state.set_state(P.diet)
-        await upd(callback.message, "Enter your diet type (keto, vegan, etc.):", reply_markup=cancel_keyboard())
     else:
         await ans(callback)
         return
     await ans(callback)
-
-
-# Gender / Activity / Fasting / Meals
-@dp.callback_query(F.data.startswith("gender_"))
-async def cb_gender(callback: CallbackQuery, state: FSMContext):
-    g = callback.data.split("_", 1)[1]
-    await save_user(str(callback.from_user.id), {"gender": g})
-    await upd(callback.message, "Gender saved!", reply_markup=profile_keyboard(str(callback.from_user.id)))
-    await ans(callback)
-
-
-@dp.callback_query(F.data.startswith("activity_"))
-async def cb_activity(callback: CallbackQuery, state: FSMContext):
-    a = callback.data.split("_", 1)[1]
-    await save_user(str(callback.from_user.id), {"activity": a})
-    await upd(callback.message, "Activity saved!", reply_markup=profile_keyboard(str(callback.from_user.id)))
-    await ans(callback)
-
-
-@dp.callback_query(F.data.startswith("fasting_"))
-async def cb_fasting(callback: CallbackQuery, state: FSMContext):
-    v = callback.data.split("_", 1)[1]
-    uid = str(callback.from_user.id)
-    if v == "yes":
-        await state.set_state(P.fasting_start)
-        await upd(callback.message, "Enter fasting START time (HH:MM):", reply_markup=cancel_keyboard())
-    else:
-        await save_user(uid, {"fasting": 0, "fasting_start": "", "fasting_stop": ""})
-        await upd(callback.message, "Fasting disabled!", reply_markup=profile_keyboard(uid))
-    await ans(callback)
-
-
-@dp.callback_query(F.data.startswith("meals_"))
-async def cb_meals(callback: CallbackQuery, state: FSMContext):
-    n = int(callback.data.split("_", 1)[1])
-    await save_user(str(callback.from_user.id), {"meals_per_day": n})
-    await upd(callback.message, f"Meals set to {n}/day!", reply_markup=profile_keyboard(str(callback.from_user.id)))
-    await ans(callback)
-
-
-# Text field handlers
-@dp.message(P.name)
-async def set_name(message: Message, state: FSMContext):
-    await save_user(str(message.from_user.id), {"name": message.text.strip()})
-    await go_home(message, str(message.from_user.id), state)
-
-
-@dp.message(P.age)
-async def set_age(message: Message, state: FSMContext):
-    try:
-        v = int(message.text.strip())
-        await save_user(str(message.from_user.id), {"age": v})
-        await go_home(message, str(message.from_user.id), state)
-    except ValueError:
-        await message.answer("Enter a valid number.")
-
-
-@dp.message(P.height)
-async def set_height(message: Message, state: FSMContext):
-    try:
-        v = int(message.text.strip())
-        await save_user(str(message.from_user.id), {"height_cm": v})
-        await go_home(message, str(message.from_user.id), state)
-    except ValueError:
-        await message.answer("Enter a valid number (cm).")
-
-
-@dp.message(P.weight)
-async def set_weight(message: Message, state: FSMContext):
-    try:
-        v = float(message.text.strip())
-        await save_user(str(message.from_user.id), {"weight_kg": v})
-        await go_home(message, str(message.from_user.id), state)
-    except ValueError:
-        await message.answer("Enter a valid number (kg).")
-
-
-@dp.message(P.goal)
-async def set_goal(message: Message, state: FSMContext):
-    try:
-        v = float(message.text.strip())
-        await save_user(str(message.from_user.id), {"goal_kg": v})
-        await go_home(message, str(message.from_user.id), state)
-    except ValueError:
-        await message.answer("Enter a valid number (kg).")
-
-
-@dp.message(P.diet)
-async def set_diet(message: Message, state: FSMContext):
-    await save_user(str(message.from_user.id), {"diet": message.text.strip()})
-    await go_home(message, str(message.from_user.id), state)
-
-
-# Fasting time
-@dp.message(P.fasting_start)
-async def f_start(message: Message, state: FSMContext):
-    t = message.text.strip()
-    try:
-        datetime.strptime(t, "%H:%M")
-    except ValueError:
-        await message.answer("Use HH:MM format (e.g. 12:00)")
-        return
-    await state.update_data(fs=t)
-    await state.set_state(P.fasting_stop)
-    await message.answer("Enter fasting STOP time (HH:MM):", reply_markup=cancel_keyboard())
-
-
-@dp.message(P.fasting_stop)
-async def f_stop(message: Message, state: FSMContext):
-    t = message.text.strip()
-    try:
-        datetime.strptime(t, "%H:%M")
-    except ValueError:
-        await message.answer("Use HH:MM format (e.g. 20:00)")
-        return
-    d = await state.get_data()
-    await save_user(str(message.from_user.id), {"fasting": 1, "fasting_start": d["fs"], "fasting_stop": t})
-    await go_home(message, str(message.from_user.id), state)
 
 
 # Schedule callbacks
@@ -377,7 +237,7 @@ async def s_add(callback: CallbackQuery, state: FSMContext):
         await ans(callback, text="Max 10!", show_alert=True)
         return
     await state.set_state(P.sched_time)
-    await upd(callback.message, "Enter time (HH:MM):\nExample: 08:00", reply_markup=cancel_keyboard())
+    await upd(callback.message, "Enter time (HH:MM):\nExample: 08:00")
     await ans(callback)
 
 
@@ -391,7 +251,7 @@ async def s_time(message: Message, state: FSMContext):
         return
     await state.update_data(st=t)
     await state.set_state(P.sched_comment)
-    await message.answer("Enter the nudge message:", reply_markup=cancel_keyboard())
+    await message.answer("Enter the nudge message:")
 
 
 @dp.message(P.sched_comment)
@@ -423,7 +283,7 @@ async def s_edit_sel(callback: CallbackQuery, state: FSMContext):
     sid = int(callback.data[3:])
     await state.update_data(eid=sid)
     await state.set_state(P.sched_edit_time)
-    await upd(callback.message, "Enter new time (HH:MM):", reply_markup=cancel_keyboard())
+    await upd(callback.message, "Enter new time (HH:MM):")
     await ans(callback)
 
 
@@ -437,7 +297,7 @@ async def s_edit_time(message: Message, state: FSMContext):
         return
     await state.update_data(et=t)
     await state.set_state(P.sched_edit_comment)
-    await message.answer("Enter new comment:", reply_markup=cancel_keyboard())
+    await message.answer("Enter new comment:")
 
 
 @dp.message(P.sched_edit_comment)
@@ -472,16 +332,10 @@ async def s_del_confirm(callback: CallbackQuery):
     await ans(callback)
 
 
-# cancel button callback
-@dp.callback_query(F.data == "profile_cancel")
-async def cb_cancel(callback: CallbackQuery, state: FSMContext):
-    await go_home_cb(callback, str(callback.from_user.id), state)
-
-
 # Bot commands
 async def set_commands():
     await bot.set_my_commands([
-        BotCommand(command="start", description="Your profile"),
+        BotCommand(command="start", description="Profile"),
         BotCommand(command="bmi", description="Calculate BMI"),
         BotCommand(command="schedule", description="Scheduled nudges"),
         BotCommand(command="test", description="Ask AI"),
