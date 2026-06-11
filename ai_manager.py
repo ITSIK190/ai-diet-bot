@@ -11,6 +11,8 @@ MODEL = "openrouter/owl-alpha"
 client = AsyncOpenAI(
     api_key=OPENROUTER_API_KEY,
     base_url="https://openrouter.ai/api/v1",
+    timeout=120,
+    max_retries=3,
 )
 
 
