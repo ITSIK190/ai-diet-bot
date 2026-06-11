@@ -215,10 +215,46 @@ async def webapp_submit(message: Message):
 # catch-all -> AI (only when no FSM state is active)
 @dp.message(F.text)
 async def catch_all(message: Message, state: FSMContext):
-    uid = str(message.from_user.id)
     text = message.text.strip()
     if not text:
         return
+    # Check if this is WebApp profile data (JSON starting with {"name":)
+    if text.startswith('{"name"') or text.startswith('{"age"'):
+        log.info(f"Detected WebApp JSON data in text message, treating as profile save")
+        try:
+            data = json.loads(text)
+            uid = str(message.from_user.id)
+            await save_user(uid, {
+                "name": data.get("name", ""),
+                "age": int(data.get("age", 0)),
+                "gender": data.get("gender", ""),
+                "height_cm": int(data.get("height", 0)),
+                "weight_kg": float(data.get("weight", 0)),
+                "goal_kg": float(data.get("goal", 0)),
+                "activity": data.get("activity", "sedentary"),
+                "diet": data.get("diet", ""),
+                "meals_per_day": int(data.get("meals", 0)),
+                "fasting": 1 if data.get("fasting") else 0,
+                "fasting_start": data.get("fasting_start", ""),
+                "fasting_stop": data.get("fasting_stop", ""),
+            })
+            d = await get_user(uid)
+            w = d.get("weight_kg", 0)
+            h = d.get("height_cm", 0)
+            age = d.get("age", 0)
+            gender = d.get("gender", "")
+            goal = d.get("goal_kg", 0)
+            activity = d.get("activity", "sedentary")
+            if all([w, h, age, gender, goal]):
+                bmi = w / ((h / 100) ** 2)
+                cal = calculate_goal_calories(w, h, age, gender, activity, goal)
+                await save_user(uid, {"bmi": round(bmi, 2), "daily_calories": cal})
+            await go_home(message, uid)
+            log.info(f"Profile saved for uid={uid} (via text fallback)")
+            return
+        except Exception as e:
+            log.error(f"Error parsing WebApp JSON from text: {e}")
+    uid = str(message.from_user.id)
     add_mem(uid, "user", text)
     resp = await generate_response(uid, text, user_memory.get(uid))
     add_mem(uid, "assistant", resp)

@@ -230,6 +230,7 @@ var statusEl = document.getElementById('status');
 if (tg) {
   statusEl.textContent = 'Connected to Telegram ✓';
   statusEl.style.color = '#34c759';
+  log('TG methods: ' + Object.getOwnPropertyNames(Object.getPrototypeOf(tg)).join(', '));
 } else {
   statusEl.textContent = 'Not in Telegram WebView ✗';
   statusEl.style.color = '#ff3b30';
@@ -329,7 +330,7 @@ function saveProfile() {
   log('Save button clicked');
   var genderBtn = document.querySelector('#gender-group button.active');
   var data = {
-    name: document.getElementById('name').value || '',
+    name: (document.getElementById('name').value || '').trim(),
     age: parseInt(document.getElementById('age').value) || 0,
     gender: genderBtn ? genderBtn.dataset.value : '',
     height: parseInt(document.getElementById('height').value) || 0,
@@ -342,7 +343,7 @@ function saveProfile() {
     fasting_start: document.getElementById('fasting_start').value || '',
     fasting_stop: document.getElementById('fasting_stop').value || ''
   };
-  log('Data: ' + JSON.stringify(data).substring(0, 80) + '...');
+  log('Data: ' + JSON.stringify(data));
   if (!data.name) {
     log('ERROR: No name');
     if (tg) { try { tg.showAlert('Name is required'); } catch(e) {} }
@@ -350,28 +351,21 @@ function saveProfile() {
     return;
   }
   var jsonStr = JSON.stringify(data);
-  log('tg object: ' + (tg ? 'exists' : 'null'));
-  log('sendData type: ' + (tg ? typeof tg.sendData : 'N/A'));
   if (tg && typeof tg.sendData === 'function') {
     try {
       if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } catch(e) {}
     try {
-      log('Calling tg.sendData...');
+      log('Calling tg.sendData with: ' + jsonStr.substring(0, 60));
       tg.sendData(jsonStr);
-      log('sendData called successfully');
-      return;
+      log('sendData returned, now closing WebApp');
     } catch(e) {
       log('sendData ERROR: ' + e.message);
-      try { tg.close(); } catch(e2) {}
-      return;
     }
+  } else {
+    log('tg.sendData not available');
   }
-  log('Falling back to close');
-  if (tg) {
-    try { tg.close(); } catch(e) {}
-  }
-  showSaved();
+  try { tg.close(); } catch(e) {}
 }
 
 function showSaved() {
