@@ -17,7 +17,14 @@ from bmi_calculator import calculate_goal_calories
 from ai_manager import generate_response, generate_nudge
 from schedule_manager import send_scheduled_messages
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("bot.log", encoding="utf-8"),
+    ],
+)
 log = logging.getLogger(__name__)
 
 bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"))
