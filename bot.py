@@ -4,6 +4,7 @@ import logging
 import os
 import urllib.parse
 from datetime import datetime
+
 from aiogram import Bot, Dispatcher, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
@@ -171,35 +172,14 @@ async def cmd_cancel(message: Message, state: FSMContext):
     await go_home(message, str(message.from_user.id), state)
 
 
-# catch-all -> AI (only when no FSM state is active)
-@dp.message(F.text)
-async def catch_all(message: Message, state: FSMContext):
-    uid = str(message.from_user.id)
-    text = message.text.strip()
-    if not text:
-        return
-    add_mem(uid, "user", text)
-    resp = await generate_response(uid, text, user_memory.get(uid))
-    add_mem(uid, "assistant", resp)
-    await message.answer(resp)
-
-
-# Nudge button callback
-@dp.callback_query(F.data == "nudge_me")
-async def cb_nudge(callback: CallbackQuery):
-    uid = str(callback.from_user.id)
-    resp = await generate_nudge(uid)
-    await callback.answer()
-    await callback.message.answer(f"💪 {resp}")
-
-
-# WebApp data handler
+# WebApp data handler — must be BEFORE catch-all F.text
 @dp.message(F.web_app_data)
 async def webapp_submit(message: Message):
     try:
-        data = json.loads(message.web_app_data.data)
+        raw = message.web_app_data.data
+        log.info(f"WebApp data received: {raw[:200]}")
+        data = json.loads(raw)
         uid = str(message.from_user.id)
-        log.info(f"WebApp save from uid={uid}: {data}")
         await save_user(uid, {
             "name": data.get("name", ""),
             "age": int(data.get("age", 0)),
@@ -230,6 +210,28 @@ async def webapp_submit(message: Message):
     except Exception as e:
         log.error(f"WebApp save error: {e}", exc_info=True)
         await message.answer(f"Error saving profile: {e}")
+
+
+# catch-all -> AI (only when no FSM state is active)
+@dp.message(F.text)
+async def catch_all(message: Message, state: FSMContext):
+    uid = str(message.from_user.id)
+    text = message.text.strip()
+    if not text:
+        return
+    add_mem(uid, "user", text)
+    resp = await generate_response(uid, text, user_memory.get(uid))
+    add_mem(uid, "assistant", resp)
+    await message.answer(resp)
+
+
+# Nudge button callback
+@dp.callback_query(F.data == "nudge_me")
+async def cb_nudge(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    resp = await generate_nudge(uid)
+    await callback.answer()
+    await callback.message.answer(f"💪 {resp}")
 
 
 # Profile callbacks
