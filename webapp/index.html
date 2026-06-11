@@ -230,7 +230,12 @@ var statusEl = document.getElementById('status');
 if (tg) {
   statusEl.textContent = 'Connected to Telegram ✓';
   statusEl.style.color = '#34c759';
-  log('TG methods: ' + Object.getOwnPropertyNames(Object.getPrototypeOf(tg)).join(', '));
+  log('TG version: ' + (tg.version || 'unknown'));
+  log('TG platform: ' + (tg.platform || 'unknown'));
+  log('TG close type: ' + typeof tg.close);
+  log('TG sendData type: ' + typeof tg.sendData);
+  log('TG initData: ' + (tg.initData || 'none'));
+  log('TG initDataUnsafe keys: ' + (tg.initDataUnsafe ? Object.keys(tg.initDataUnsafe).join(',') : 'none'));
 } else {
   statusEl.textContent = 'Not in Telegram WebView ✗';
   statusEl.style.color = '#ff3b30';
