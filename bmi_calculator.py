@@ -19,4 +19,6 @@ def calculate_goal_calories(weight_kg: float, height_cm: int, age: int, gender: 
     weight_diff = goal_kg - weight_kg
     weekly_change = weight_diff / 8
     adjustment = weekly_change * 1100
-    return int(round(tdee + adjustment, 0))
+    result = int(round(tdee + adjustment, 0))
+    floor = 1500 if gender.lower() == "male" else 1200
+    return max(result, floor)
