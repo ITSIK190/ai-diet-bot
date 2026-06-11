@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -86,8 +86,7 @@ select { appearance: none; -webkit-appearance: none; background-image: url("data
 <body>
 <div class="header">
   <h1>Profile</h1>
-  <div id="status" style="font-size:12px;color:var(--hint);margin-bottom:4px;"></div>
-  <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+  <div class="progress-bar"><div class="progress-fill" id="progress"></div>
 </div>
 <div class="form" id="form">
   <div class="section">
@@ -198,42 +197,15 @@ select { appearance: none; -webkit-appearance: none; background-image: url("data
 <div class="footer">
   <button class="save-btn" id="save-btn" onclick="saveProfile()">Save Profile</button>
 </div>
-<div id="log" style="position:fixed;bottom:70px;left:0;right:0;padding:8px 16px;font-size:11px;color:var(--hint);max-height:80px;overflow:auto;z-index:99;"></div>
 <script>
-function log(msg) {
-  var el = document.getElementById('log');
-  var t = new Date().toLocaleTimeString();
-  el.innerHTML += '[' + t + '] ' + msg + '<br>';
-  console.log('[Profile] ' + msg);
-}
-
 var tg = null;
 try {
-  log('Script started');
-  log('window.Telegram: ' + (typeof window.Telegram));
-  if (window.Telegram) {
-    log('Telegram.WebApp: ' + (typeof window.Telegram.WebApp));
-    if (window.Telegram.WebApp) {
-      tg = window.Telegram.WebApp;
-      log('TG version: ' + (tg.version || 'unknown'));
-      log('TG platform: ' + (tg.platform || 'unknown'));
-      tg.expand();
-      tg.ready();
-      log('TG initialized OK');
-    }
+  if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.ready();
   }
-} catch(e) {
-  log('TG init error: ' + e.message);
-}
-
-var statusEl = document.getElementById('status');
-if (tg) {
-  statusEl.textContent = 'Connected to Telegram ✓';
-  statusEl.style.color = '#34c759';
-} else {
-  statusEl.textContent = 'Not in Telegram WebView ✗';
-  statusEl.style.color = '#ff3b30';
-}
+} catch(e) {}
 
 function getParam(name) {
   try {
@@ -276,7 +248,6 @@ function prefill() {
   var fe = getParam('fasting_stop');
   if (fe) document.getElementById('fasting_stop').value = fe;
   updateProgress();
-  log('Prefilled from URL params');
 }
 
 function updateSlider(id, suffix, _, val) {
@@ -326,10 +297,9 @@ function updateProgress() {
 }
 
 function saveProfile() {
-  log('Save button clicked');
   var genderBtn = document.querySelector('#gender-group button.active');
   var data = {
-    name: document.getElementById('name').value || '',
+    name: (document.getElementById('name').value || '').trim(),
     age: parseInt(document.getElementById('age').value) || 0,
     gender: genderBtn ? genderBtn.dataset.value : '',
     height: parseInt(document.getElementById('height').value) || 0,
@@ -342,50 +312,24 @@ function saveProfile() {
     fasting_start: document.getElementById('fasting_start').value || '',
     fasting_stop: document.getElementById('fasting_stop').value || ''
   };
-  log('Data: ' + JSON.stringify(data).substring(0, 80) + '...');
   if (!data.name) {
-    log('ERROR: No name');
     if (tg) { try { tg.showAlert('Name is required'); } catch(e) {} }
     else { alert('Name is required'); }
     return;
   }
   var jsonStr = JSON.stringify(data);
-  log('tg object: ' + (tg ? 'exists' : 'null'));
-  log('sendData type: ' + (tg ? typeof tg.sendData : 'N/A'));
+  try {
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+  } catch(e) {}
   if (tg && typeof tg.sendData === 'function') {
     try {
-      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-    } catch(e) {}
-    try {
-      log('Calling tg.sendData...');
       tg.sendData(jsonStr);
-      log('sendData called successfully');
-      return;
-    } catch(e) {
-      log('sendData ERROR: ' + e.message);
-      try { tg.close(); } catch(e2) {}
-      return;
-    }
+    } catch(e) {}
   }
-  log('Falling back to close');
-  if (tg) {
-    try { tg.close(); } catch(e) {}
-  }
-  showSaved();
+  try { tg.close(); } catch(e) {}
 }
-
-function showSaved() {
-  var btn = document.getElementById('save-btn');
-  btn.textContent = '✓ Saved!';
-  btn.style.background = '#34c759';
-  setTimeout(function() {
-    btn.textContent = 'Save Profile';
-    btn.style.background = '';
-  }, 2000);
-}
-
-prefill();
-log('Page ready');
 </script>
 </body>
 </html>
+
+
