@@ -130,8 +130,8 @@ def add_mem(uid, role, content):
     if uid not in user_memory:
         user_memory[uid] = []
     user_memory[uid].append({"role": role, "content": content})
-    if len(user_memory[uid]) > 20:
-        user_memory[uid] = user_memory[uid][-20:]
+    if len(user_memory[uid]) > 40:
+        user_memory[uid] = user_memory[uid][-40:]
 
 
 # /start
@@ -162,7 +162,7 @@ async def cmd_sched(message: Message):
 @dp.message(Command("nudge"))
 async def cmd_nudge(message: Message):
     uid = str(message.from_user.id)
-    resp = await generate_nudge(uid)
+    resp = await generate_nudge(uid, user_memory.get(uid))
     await message.answer(f"💪 {resp}")
 
 
@@ -222,7 +222,7 @@ async def catch_all(message: Message, state: FSMContext):
     if text.lower() in ("nudge me", "nudge", "nudge_me"):
         uid = str(message.from_user.id)
         try:
-            resp = await generate_nudge(uid)
+            resp = await generate_nudge(uid, user_memory.get(uid))
             await message.answer(f"💪 {resp}")
         except Exception as e:
             log.error(f"Nudge error: {e}")
@@ -271,15 +271,15 @@ async def catch_all(message: Message, state: FSMContext):
         add_mem(uid, "assistant", resp)
         await message.answer(resp)
     except Exception as e:
-        log.error(f"AI error for uid={uid}: {e}")
-        await message.answer("Something happened, please try again.")
+        log.error(f"AI error for uid={uid}: {e}", exc_info=True)
+        await message.answer("Sorry, something happened. Please try again in a moment.")
 
 
 # Nudge button callback
 @dp.callback_query(F.data == "nudge_me")
 async def cb_nudge(callback: CallbackQuery):
     uid = str(callback.from_user.id)
-    resp = await generate_nudge(uid)
+    resp = await generate_nudge(uid, user_memory.get(uid))
     await callback.answer()
     await callback.message.answer(f"💪 {resp}")
 
