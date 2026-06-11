@@ -218,25 +218,11 @@ async def catch_all(message: Message, state: FSMContext):
     text = message.text.strip()
     if not text:
         return
-    # Handle "Calc BMI" from reply keyboard
-    if text.lower() in ("calc bmi", "calcbmi", "bmi"):
+    # Handle "Nudge Me" from reply keyboard
+    if text.lower() in ("nudge me", "nudge", "nudge_me"):
         uid = str(message.from_user.id)
-        d = await get_user(uid)
-        w = d.get("weight_kg", 0)
-        h = d.get("height_cm", 0)
-        if w and h:
-            bmi = w / ((h / 100) ** 2)
-            if bmi < 18.5:
-                category = "Underweight"
-            elif bmi < 25:
-                category = "Normal"
-            elif bmi < 30:
-                category = "Overweight"
-            else:
-                category = "Obese"
-            await message.answer(f"Your BMI: {bmi:.1f} ({category})\nWeight: {w} kg, Height: {h} cm")
-        else:
-            await message.answer("Please set your weight and height first. Tap Edit Profile.")
+        resp = await generate_nudge(uid)
+        await message.answer(f"💪 {resp}")
         return
     # Check if this is WebApp profile data (JSON starting with {"name":)
     if text.startswith('{"name"') or text.startswith('{"age"'):

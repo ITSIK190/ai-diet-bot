@@ -5,7 +5,7 @@ def profile_webapp_keyboard(webapp_url: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Edit Profile", web_app=WebAppInfo(url=webapp_url))],
-            [KeyboardButton(text="Calc BMI")],
+            [KeyboardButton(text="Nudge Me")],
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
