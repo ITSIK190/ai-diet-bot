@@ -218,6 +218,26 @@ async def catch_all(message: Message, state: FSMContext):
     text = message.text.strip()
     if not text:
         return
+    # Handle "Calc BMI" from reply keyboard
+    if text.lower() in ("calc bmi", "calcbmi", "bmi"):
+        uid = str(message.from_user.id)
+        d = await get_user(uid)
+        w = d.get("weight_kg", 0)
+        h = d.get("height_cm", 0)
+        if w and h:
+            bmi = w / ((h / 100) ** 2)
+            if bmi < 18.5:
+                category = "Underweight"
+            elif bmi < 25:
+                category = "Normal"
+            elif bmi < 30:
+                category = "Overweight"
+            else:
+                category = "Obese"
+            await message.answer(f"Your BMI: {bmi:.1f} ({category})\nWeight: {w} kg, Height: {h} cm")
+        else:
+            await message.answer("Please set your weight and height first. Tap Edit Profile.")
+        return
     # Check if this is WebApp profile data (JSON starting with {"name":)
     if text.startswith('{"name"') or text.startswith('{"age"'):
         log.info(f"Detected WebApp JSON data in text message, treating as profile save")
@@ -278,10 +298,27 @@ async def profile_cb(callback: CallbackQuery, state: FSMContext):
 
     if action == "back":
         await go_home_cb(callback, uid, state)
+        await ans(callback)
+    elif action == "bmi":
+        d = await get_user(uid)
+        w = d.get("weight_kg", 0)
+        h = d.get("height_cm", 0)
+        if w and h:
+            bmi = w / ((h / 100) ** 2)
+            if bmi < 18.5:
+                category = "Underweight"
+            elif bmi < 25:
+                category = "Normal"
+            elif bmi < 30:
+                category = "Overweight"
+            else:
+                category = "Obese"
+            await callback.message.answer(f"Your BMI: {bmi:.1f} ({category})\nWeight: {w} kg, Height: {h} cm")
+        else:
+            await callback.message.answer("Please set your weight and height first. Tap Edit Profile.")
+        await ans(callback)
     else:
         await ans(callback)
-        return
-    await ans(callback)
 
 
 # Schedule callbacks

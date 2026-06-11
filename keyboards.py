@@ -1,11 +1,15 @@
-﻿from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+﻿from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
 
 
-def profile_webapp_keyboard(webapp_url: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Edit Profile", web_app=WebAppInfo(url=webapp_url))],
-        [InlineKeyboardButton(text="Calc BMI", callback_data="profile_bmi")],
-    ])
+def profile_webapp_keyboard(webapp_url: str) -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Edit Profile", web_app=WebAppInfo(url=webapp_url))],
+            [KeyboardButton(text="Calc BMI")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=False,
+    )
 
 
 def schedule_keyboard() -> InlineKeyboardMarkup:
