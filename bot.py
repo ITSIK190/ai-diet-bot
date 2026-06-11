@@ -14,7 +14,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from local_db import init_db, get_user, save_user, get_schedules, add_schedule, delete_schedule, update_schedule
 from keyboards import profile_webapp_keyboard, schedule_keyboard
 from bmi_calculator import calculate_goal_calories
-from ai_manager import generate_response
+from ai_manager import generate_response, generate_nudge
 from schedule_manager import send_scheduled_messages
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -156,20 +156,6 @@ async def cmd_cancel(message: Message, state: FSMContext):
     await go_home(message, str(message.from_user.id), state)
 
 
-# /test
-@dp.message(Command("test"))
-async def cmd_test(message: Message):
-    parts = message.text.split(" ", 1)
-    if len(parts) < 2:
-        await message.answer("Usage: /test <message>")
-        return
-    uid = str(message.from_user.id)
-    add_mem(uid, "user", parts[1])
-    resp = await generate_response(uid, parts[1])
-    add_mem(uid, "assistant", resp)
-    await message.answer(resp)
-
-
 # catch-all -> AI (only when no FSM state is active)
 @dp.message(F.text)
 async def catch_all(message: Message, state: FSMContext):
@@ -178,9 +164,18 @@ async def catch_all(message: Message, state: FSMContext):
     if not text:
         return
     add_mem(uid, "user", text)
-    resp = await generate_response(uid, text)
+    resp = await generate_response(uid, text, user_memory.get(uid))
     add_mem(uid, "assistant", resp)
     await message.answer(resp)
+
+
+# Nudge button callback
+@dp.callback_query(F.data == "nudge_me")
+async def cb_nudge(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    resp = await generate_nudge(uid)
+    await callback.answer()
+    await callback.message.answer(f"💪 {resp}")
 
 
 # WebApp data handler
@@ -351,7 +346,6 @@ async def set_commands():
     await bot.set_my_commands([
         BotCommand(command="start", description="Profile"),
         BotCommand(command="schedule", description="Scheduled nudges"),
-        BotCommand(command="test", description="Ask AI"),
     ])
 
 
