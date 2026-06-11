@@ -57,7 +57,7 @@ def prof(data: dict) -> str:
     if data.get("diet"): lines.append(f"Diet: {data['diet']}")
     if data.get("meals_per_day"): lines.append(f"Meals/day: {data['meals_per_day']}")
     if data.get("fasting"):
-        lines.append(f"Fasting: {data.get('fasting_start','')} - {data.get('fasting_stop','')}")
+        lines.append(f"Eating window: {data.get('fasting_start','')} - {data.get('fasting_stop','')}")
     if data.get("bmi"): lines.append(f"BMI: {data['bmi']:.1f}")
     if data.get("daily_calories"): lines.append(f"Calories: {data['daily_calories']} kcal")
 

@@ -43,7 +43,7 @@ def _build_system_prompt(user_data: dict) -> str:
     if calories and calories > 0:
         prompt += f"Daily calorie target: {calories}. "
     if fasting and fasting_start and fasting_end:
-        prompt += f"Fasting window: {fasting_start}-{fasting_end}. "
+        prompt += f"Eating window: {fasting_start}-{fasting_end} (fasting the rest of the day). "
     prompt += f"Current time in Israel: {now}. "
     prompt += "Be conversational, warm, and motivating. Keep responses under 80 words. "
     prompt += "Remember context from the conversation and refer back to things the user mentioned."
