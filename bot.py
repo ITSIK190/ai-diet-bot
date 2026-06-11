@@ -1,7 +1,8 @@
-﻿import asyncio
+import asyncio
 import json
 import logging
 import os
+import urllib.parse
 from datetime import datetime
 from aiogram import Bot, Dispatcher, F
 from aiogram.exceptions import TelegramBadRequest
@@ -22,7 +23,7 @@ log = logging.getLogger(__name__)
 bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"))
 dp = Dispatcher(storage=MemoryStorage())
 
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://localhost:8080")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://itsik190.github.io/ai-diet-bot/")
 
 user_memory: dict[str, list[dict]] = {}
 
@@ -85,14 +86,36 @@ async def go_home(message, uid, state=None):
     if state:
         await state.clear()
     data = await get_user(uid)
-    await message.answer(prof(data), reply_markup=profile_webapp_keyboard(WEBAPP_URL))
+    url = _build_webapp_url(data)
+    await message.answer(prof(data), reply_markup=profile_webapp_keyboard(url))
 
 
 async def go_home_cb(cb, uid, state=None):
     if state:
         await state.clear()
     data = await get_user(uid)
-    await upd(cb.message, prof(data), reply_markup=profile_webapp_keyboard(WEBAPP_URL))
+    url = _build_webapp_url(data)
+    await upd(cb.message, prof(data), reply_markup=profile_webapp_keyboard(url))
+
+
+def _build_webapp_url(data: dict) -> str:
+    params = {}
+    if data.get("name"): params["name"] = data["name"]
+    if data.get("age"): params["age"] = str(data["age"])
+    if data.get("gender"): params["gender"] = data["gender"]
+    if data.get("height_cm"): params["height"] = str(data["height_cm"])
+    if data.get("weight_kg"): params["weight"] = str(data["weight_kg"])
+    if data.get("goal_kg"): params["goal"] = str(data["goal_kg"])
+    if data.get("activity"): params["activity"] = data["activity"]
+    if data.get("diet"): params["diet"] = data["diet"]
+    if data.get("meals_per_day"): params["meals"] = str(data["meals_per_day"])
+    if data.get("fasting"):
+        params["fasting"] = "1"
+        params["fasting_start"] = data.get("fasting_start", "12:00")
+        params["fasting_stop"] = data.get("fasting_stop", "20:00")
+    if params:
+        return WEBAPP_URL + "?" + urllib.parse.urlencode(params)
+    return WEBAPP_URL
 
 
 def add_mem(uid, role, content):
@@ -123,7 +146,7 @@ async def cmd_bmi(message: Message):
     age, gender = d.get("age", 0), d.get("gender", "")
     goal, activity = d.get("goal_kg", 0), d.get("activity", "sedentary")
     if not all([w, h, age, gender, goal]):
-        await message.answer("Missing data! Complete your profile first.", reply_markup=profile_webapp_keyboard(WEBAPP_URL))
+        await message.answer("Missing data! Complete your profile first.", reply_markup=profile_webapp_keyboard(_build_webapp_url(d)))
         return
     bmi = w / ((h / 100) ** 2)
     cal = calculate_goal_calories(w, h, age, gender, activity, goal)
