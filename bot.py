@@ -137,24 +137,6 @@ async def cmd_start(message: Message, state: FSMContext):
     await go_home(message, uid)
 
 
-# /bmi
-@dp.message(Command("bmi"))
-async def cmd_bmi(message: Message):
-    uid = str(message.from_user.id)
-    d = await get_user(uid)
-    w, h = d.get("weight_kg", 0), d.get("height_cm", 0)
-    age, gender = d.get("age", 0), d.get("gender", "")
-    goal, activity = d.get("goal_kg", 0), d.get("activity", "sedentary")
-    if not all([w, h, age, gender, goal]):
-        await message.answer("Missing data! Complete your profile first.", reply_markup=profile_webapp_keyboard(_build_webapp_url(d)))
-        return
-    bmi = w / ((h / 100) ** 2)
-    cal = calculate_goal_calories(w, h, age, gender, activity, goal)
-    await save_user(uid, {"bmi": round(bmi, 2), "daily_calories": cal})
-    status = "normal" if 18.5 <= bmi <= 25 else "overweight" if bmi <= 30 else "obese"
-    await message.answer(f"BMI: {bmi:.1f} ({status})\nCalories: {cal} kcal/day")
-
-
 # /schedule
 @dp.message(Command("schedule"))
 async def cmd_sched(message: Message):
@@ -220,6 +202,17 @@ async def webapp_submit(message: Message):
         "fasting_start": data.get("fasting_start", ""),
         "fasting_stop": data.get("fasting_stop", ""),
     })
+    d = await get_user(uid)
+    w = d.get("weight_kg", 0)
+    h = d.get("height_cm", 0)
+    age = d.get("age", 0)
+    gender = d.get("gender", "")
+    goal = d.get("goal_kg", 0)
+    activity = d.get("activity", "sedentary")
+    if all([w, h, age, gender, goal]):
+        bmi = w / ((h / 100) ** 2)
+        cal = calculate_goal_calories(w, h, age, gender, activity, goal)
+        await save_user(uid, {"bmi": round(bmi, 2), "daily_calories": cal})
     await go_home(message, uid)
 
 
@@ -231,8 +224,6 @@ async def profile_cb(callback: CallbackQuery, state: FSMContext):
 
     if action == "back":
         await go_home_cb(callback, uid, state)
-    elif action == "bmi":
-        await cmd_bmi(callback.message)
     else:
         await ans(callback)
         return
@@ -359,7 +350,6 @@ async def s_del_confirm(callback: CallbackQuery):
 async def set_commands():
     await bot.set_my_commands([
         BotCommand(command="start", description="Profile"),
-        BotCommand(command="bmi", description="Calculate BMI"),
         BotCommand(command="schedule", description="Scheduled nudges"),
         BotCommand(command="test", description="Ask AI"),
     ])
