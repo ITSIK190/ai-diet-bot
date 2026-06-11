@@ -221,8 +221,12 @@ async def catch_all(message: Message, state: FSMContext):
     # Handle "Nudge Me" from reply keyboard
     if text.lower() in ("nudge me", "nudge", "nudge_me"):
         uid = str(message.from_user.id)
-        resp = await generate_nudge(uid)
-        await message.answer(f"💪 {resp}")
+        try:
+            resp = await generate_nudge(uid)
+            await message.answer(f"💪 {resp}")
+        except Exception as e:
+            log.error(f"Nudge error: {e}")
+            await message.answer("💪 Keep going, you're doing great!")
         return
     # Check if this is WebApp profile data (JSON starting with {"name":)
     if text.startswith('{"name"') or text.startswith('{"age"'):
@@ -262,9 +266,13 @@ async def catch_all(message: Message, state: FSMContext):
             log.error(f"Error parsing WebApp JSON from text: {e}")
     uid = str(message.from_user.id)
     add_mem(uid, "user", text)
-    resp = await generate_response(uid, text, user_memory.get(uid))
-    add_mem(uid, "assistant", resp)
-    await message.answer(resp)
+    try:
+        resp = await generate_response(uid, text, user_memory.get(uid))
+        add_mem(uid, "assistant", resp)
+        await message.answer(resp)
+    except Exception as e:
+        log.error(f"AI error for uid={uid}: {e}")
+        await message.answer("Something happened, please try again.")
 
 
 # Nudge button callback

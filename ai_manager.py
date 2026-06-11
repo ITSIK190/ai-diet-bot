@@ -1,7 +1,8 @@
 import os
 import datetime
+import asyncio
 import pytz
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, APIStatusError
 from local_db import get_user
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -64,13 +65,21 @@ async def generate_response(user_id: str, prompt: str, memory: list = None) -> s
 
         messages.append({"role": "user", "content": prompt})
 
-        resp = await client.chat.completions.create(
-            model=MODEL,
-            messages=messages,
-            max_tokens=200,
-            temperature=0.7,
-        )
-        return resp.choices[0].message.content.strip()
+        for attempt in range(3):
+            try:
+                resp = await client.chat.completions.create(
+                    model=MODEL,
+                    messages=messages,
+                    max_tokens=200,
+                    temperature=0.7,
+                )
+                return resp.choices[0].message.content.strip()
+            except APIStatusError as e:
+                if e.status_code == 429:
+                    await asyncio.sleep(2 * (attempt + 1))
+                    continue
+                raise
+        return "Sorry, the AI is busy right now. Please try again in a moment."
 
     except Exception as e:
         print(f"AI error: {e}")
@@ -86,16 +95,24 @@ async def generate_nudge(user_id: str) -> str:
         system_prompt = _build_system_prompt(user_data)
         system_prompt += " Give a short personalized encouragement (2-3 sentences). No questions, just motivation."
 
-        resp = await client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": "Give me a quick encouragement boost!"},
-            ],
-            max_tokens=100,
-            temperature=0.8,
-        )
-        return resp.choices[0].message.content.strip()
+        for attempt in range(3):
+            try:
+                resp = await client.chat.completions.create(
+                    model=MODEL,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": "Give me a quick encouragement boost!"},
+                    ],
+                    max_tokens=100,
+                    temperature=0.8,
+                )
+                return resp.choices[0].message.content.strip()
+            except APIStatusError as e:
+                if e.status_code == 429:
+                    await asyncio.sleep(2 * (attempt + 1))
+                    continue
+                raise
+        return "Keep going, you're doing great!"
 
     except Exception as e:
         print(f"AI error: {e}")
