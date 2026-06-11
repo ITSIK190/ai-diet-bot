@@ -198,21 +198,40 @@ select { appearance: none; -webkit-appearance: none; background-image: url("data
 <div class="footer">
   <button class="save-btn" id="save-btn" onclick="saveProfile()">Save Profile</button>
 </div>
+<div id="log" style="position:fixed;bottom:70px;left:0;right:0;padding:8px 16px;font-size:11px;color:var(--hint);max-height:80px;overflow:auto;z-index:99;"></div>
 <script>
+function log(msg) {
+  var el = document.getElementById('log');
+  var t = new Date().toLocaleTimeString();
+  el.innerHTML += '[' + t + '] ' + msg + '<br>';
+  console.log('[Profile] ' + msg);
+}
+
 var tg = null;
 try {
-  if (window.Telegram && window.Telegram.WebApp) {
-    tg = window.Telegram.WebApp;
-    tg.expand();
-    tg.ready();
+  log('Script started');
+  log('window.Telegram: ' + (typeof window.Telegram));
+  if (window.Telegram) {
+    log('Telegram.WebApp: ' + (typeof window.Telegram.WebApp));
+    if (window.Telegram.WebApp) {
+      tg = window.Telegram.WebApp;
+      log('TG version: ' + (tg.version || 'unknown'));
+      log('TG platform: ' + (tg.platform || 'unknown'));
+      tg.expand();
+      tg.ready();
+      log('TG initialized OK');
+    }
   }
-} catch(e) {}
+} catch(e) {
+  log('TG init error: ' + e.message);
+}
+
 var statusEl = document.getElementById('status');
 if (tg) {
-  statusEl.textContent = 'Connected to Telegram';
+  statusEl.textContent = 'Connected to Telegram ✓';
   statusEl.style.color = '#34c759';
 } else {
-  statusEl.textContent = 'Not in Telegram WebView - data will not be saved';
+  statusEl.textContent = 'Not in Telegram WebView ✗';
   statusEl.style.color = '#ff3b30';
 }
 
@@ -257,6 +276,7 @@ function prefill() {
   var fe = getParam('fasting_stop');
   if (fe) document.getElementById('fasting_stop').value = fe;
   updateProgress();
+  log('Prefilled from URL params');
 }
 
 function updateSlider(id, suffix, _, val) {
@@ -306,6 +326,7 @@ function updateProgress() {
 }
 
 function saveProfile() {
+  log('Save button clicked');
   var genderBtn = document.querySelector('#gender-group button.active');
   var data = {
     name: document.getElementById('name').value || '',
@@ -321,24 +342,32 @@ function saveProfile() {
     fasting_start: document.getElementById('fasting_start').value || '',
     fasting_stop: document.getElementById('fasting_stop').value || ''
   };
+  log('Data: ' + JSON.stringify(data).substring(0, 80) + '...');
   if (!data.name) {
+    log('ERROR: No name');
     if (tg) { try { tg.showAlert('Name is required'); } catch(e) {} }
     else { alert('Name is required'); }
     return;
   }
   var jsonStr = JSON.stringify(data);
+  log('tg object: ' + (tg ? 'exists' : 'null'));
+  log('sendData type: ' + (tg ? typeof tg.sendData : 'N/A'));
   if (tg && typeof tg.sendData === 'function') {
     try {
       if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } catch(e) {}
     try {
+      log('Calling tg.sendData...');
       tg.sendData(jsonStr);
+      log('sendData called successfully');
       return;
     } catch(e) {
+      log('sendData ERROR: ' + e.message);
       try { tg.close(); } catch(e2) {}
       return;
     }
   }
+  log('Falling back to close');
   if (tg) {
     try { tg.close(); } catch(e) {}
   }
@@ -356,6 +385,6 @@ function showSaved() {
 }
 
 prefill();
-</script>
+log('Page ready');
 </body>
 </html>
