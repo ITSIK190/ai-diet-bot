@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src *;">
 <title>Profile</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
   --bg: var(--tg-theme-bg-color, #ffffff);
   --text: var(--tg-theme-text-color, #000000);
@@ -16,14 +16,11 @@
   --btn-bg: var(--tg-theme-button-color, #2481cc);
   --btn-text: var(--tg-theme-button-text-color, #ffffff);
   --sec-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  --destructive: var(--tg-theme-destructive-text-color, #ff3b30);
   --section-bg: var(--tg-theme-section-bg-color, #ffffff);
   --section-header: var(--tg-theme-section-header-text-color, #6d6d72);
-  --subtitle: var(--tg-theme-subtitle-text-color, #8e8e93);
   --radius: 12px;
   --radius-sm: 8px;
 }
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
@@ -33,444 +30,126 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
-
 .header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  position: sticky; top: 0; z-index: 100;
   background: var(--bg);
   padding: 16px 16px 8px;
   border-bottom: 1px solid var(--sec-bg);
 }
-
-.header h1 {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.progress-bar {
-  height: 4px;
-  background: var(--sec-bg);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--btn-bg);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-  width: 0%;
-}
-
-.form {
-  padding: 12px 16px 100px;
-}
-
-.section {
-  background: var(--section-bg);
-  border-radius: var(--radius);
-  margin-bottom: 12px;
-  overflow: hidden;
-}
-
-.section-title {
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--section-header);
-  padding: 16px 16px 8px;
-  letter-spacing: 0.5px;
-}
-
-.field {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--sec-bg);
-  position: relative;
-}
-
-.field:last-child {
-  border-bottom: none;
-}
-
-.field-label {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 2px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.field-value {
-  font-size: 14px;
-  color: var(--hint);
-  margin-bottom: 8px;
-}
-
-.field-value.filled {
-  color: var(--link);
-  font-weight: 500;
-}
-
+.header h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.progress-bar { height: 4px; background: var(--sec-bg); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--btn-bg); border-radius: 2px; transition: width 0.3s ease; width: 0%; }
+.form { padding: 12px 16px 100px; }
+.section { background: var(--section-bg); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+.section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--section-header); padding: 16px 16px 8px; letter-spacing: 0.5px; }
+.field { padding: 12px 16px; border-bottom: 1px solid var(--sec-bg); }
+.field:last-child { border-bottom: none; }
+.field-label { font-size: 14px; font-weight: 500; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; }
 input[type="text"], input[type="time"], select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--sec-bg);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 16px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s;
+  width: 100%; padding: 10px 12px; border: 1px solid var(--sec-bg); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font-size: 16px; font-family: inherit; outline: none;
 }
-
-input[type="text"]:focus, input[type="time"]:focus, select:focus {
-  border-color: var(--btn-bg);
-}
-
-input[readonly] {
-  background: var(--sec-bg);
-  color: var(--hint);
-  cursor: default;
-}
-
-select {
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
-}
-
-.slider-container {
-  padding: 4px 0;
-}
-
-.slider-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.slider-row input[type="range"] {
-  flex: 1;
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--sec-bg);
-  outline: none;
-}
-
-.slider-row input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--btn-bg);
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-.slider-row input[type="range"]::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--btn-bg);
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-.slider-value {
-  min-width: 48px;
-  text-align: right;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--link);
-}
-
-.segmented {
-  display: flex;
-  gap: 0;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  border: 1px solid var(--btn-bg);
-}
-
-.segmented button {
-  flex: 1;
-  padding: 10px 8px;
-  border: none;
-  background: var(--bg);
-  color: var(--btn-bg);
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  border-right: 1px solid var(--btn-bg);
-}
-
-.segmented button:last-child {
-  border-right: none;
-}
-
-.segmented button.active {
-  background: var(--btn-bg);
-  color: var(--btn-text);
-}
-
-.stepper {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-
-.stepper button {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--btn-bg);
-  background: var(--bg);
-  color: var(--btn-bg);
-  font-size: 20px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-}
-
-.stepper button:first-child {
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-}
-
-.stepper button:last-child {
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-}
-
-.stepper button:active {
-  background: var(--btn-bg);
-  color: var(--btn-text);
-}
-
-.stepper-value {
-  width: 48px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--link);
-  border-top: 1px solid var(--btn-bg);
-  border-bottom: 1px solid var(--btn-bg);
-}
-
-.toggle {
-  position: relative;
-  width: 52px;
-  height: 32px;
-}
-
-.toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-
-.toggle-track {
-  position: absolute;
-  inset: 0;
-  background: var(--sec-bg);
-  border-radius: 16px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.toggle input:checked + .toggle-track {
-  background: var(--btn-bg);
-}
-
-.toggle-track::after {
-  content: '';
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  background: white;
-  border-radius: 50%;
-  top: 3px;
-  left: 3px;
-  transition: transform 0.2s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.toggle input:checked + .toggle-track::after {
-  transform: translateX(20px);
-}
-
-.toggle-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.fasting-times {
-  display: none;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--sec-bg);
-}
-
-.fasting-times.visible {
-  display: block;
-}
-
-.fasting-times .field {
-  padding: 8px 0;
-}
-
-.fasting-times .field:last-child {
-  padding-bottom: 0;
-}
-
-.footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px 16px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
-  background: var(--bg);
-  border-top: 1px solid var(--sec-bg);
-  z-index: 100;
-}
-
-.save-btn {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: var(--radius);
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  font-size: 17px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
-}
-
-.save-btn:active {
-  opacity: 0.85;
-  transform: scale(0.98);
-}
-
-.save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.hint-text {
-  font-size: 12px;
-  color: var(--hint);
-  margin-top: 4px;
-}
+input[readonly] { background: var(--sec-bg); color: var(--hint); cursor: default; }
+select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.slider-container { padding: 4px 0; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider-row input[type="range"] { flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: var(--sec-bg); outline: none; }
+.slider-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--btn-bg); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.slider-row input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--btn-bg); cursor: pointer; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.slider-value { min-width: 48px; text-align: right; font-size: 16px; font-weight: 600; color: var(--link); }
+.segmented { display: flex; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--btn-bg); }
+.segmented button { flex: 1; padding: 10px 8px; border: none; background: var(--bg); color: var(--btn-bg); font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; border-right: 1px solid var(--btn-bg); }
+.segmented button:last-child { border-right: none; }
+.segmented button.active { background: var(--btn-bg); color: var(--btn-text); }
+.stepper { display: flex; align-items: center; }
+.stepper button { width: 40px; height: 40px; border: 1px solid var(--btn-bg); background: var(--bg); color: var(--btn-bg); font-size: 20px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.stepper button:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.stepper button:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.stepper-value { width: 48px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: var(--link); border-top: 1px solid var(--btn-bg); border-bottom: 1px solid var(--btn-bg); }
+.toggle { position: relative; width: 52px; height: 32px; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track { position: absolute; inset: 0; background: var(--sec-bg); border-radius: 16px; cursor: pointer; transition: background 0.2s; }
+.toggle input:checked + .toggle-track { background: var(--btn-bg); }
+.toggle-track::after { content: ''; position: absolute; width: 26px; height: 26px; background: white; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.toggle input:checked + .toggle-track::after { transform: translateX(20px); }
+.toggle-row { display: flex; justify-content: space-between; align-items: center; }
+.fasting-times { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--sec-bg); }
+.fasting-times.visible { display: block; }
+.fasting-times .field { padding: 8px 0; }
+.fasting-times .field:last-child { padding-bottom: 0; }
+.footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--sec-bg); z-index: 100; }
+.save-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius); background: var(--btn-bg); color: var(--btn-text); font-size: 17px; font-weight: 600; font-family: inherit; cursor: pointer; }
+.save-btn:active { opacity: 0.85; }
+.hint-text { font-size: 12px; color: var(--hint); margin-top: 4px; }
 </style>
 </head>
 <body>
-
 <div class="header">
   <h1>Profile</h1>
+  <div id="status" style="font-size:12px;color:var(--hint);margin-bottom:4px;"></div>
   <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
 </div>
-
-<form class="form" id="form" onsubmit="return false;">
-
+<div class="form" id="form">
   <div class="section">
     <div class="section-title">Basic Info</div>
-
     <div class="field">
       <div class="field-label">Name</div>
       <input type="text" id="name" readonly>
       <div class="hint-text">From your Telegram profile</div>
     </div>
-
     <div class="field">
       <div class="field-label">Age</div>
-      <div class="slider-container">
-        <div class="slider-row">
-          <input type="range" id="age" min="10" max="100" value="30" oninput="updateSlider('age', '', this.value)">
-          <span class="slider-value" id="age-val">30</span>
-        </div>
-      </div>
+      <div class="slider-container"><div class="slider-row">
+        <input type="range" id="age" min="10" max="100" value="30" oninput="updateSlider('age','','',this.value)">
+        <span class="slider-value" id="age-val">30</span>
+      </div></div>
     </div>
-
     <div class="field">
       <div class="field-label">Gender</div>
       <div class="segmented" id="gender-group">
-        <button type="button" data-value="Male" onclick="selectSegmented('gender', this)">Male</button>
-        <button type="button" data-value="Female" onclick="selectSegmented('gender', this)">Female</button>
-        <button type="button" data-value="Other" onclick="selectSegmented('gender', this)">Other</button>
+        <button type="button" data-value="Male" onclick="selectSegmented(this)">Male</button>
+        <button type="button" data-value="Female" onclick="selectSegmented(this)">Female</button>
+        <button type="button" data-value="Other" onclick="selectSegmented(this)">Other</button>
       </div>
     </div>
   </div>
-
   <div class="section">
     <div class="section-title">Body</div>
-
     <div class="field">
       <div class="field-label">Height (cm)</div>
-      <div class="slider-container">
-        <div class="slider-row">
-          <input type="range" id="height" min="100" max="250" value="170" oninput="updateSlider('height', ' cm', this.value)">
-          <span class="slider-value" id="height-val">170 cm</span>
-        </div>
-      </div>
+      <div class="slider-container"><div class="slider-row">
+        <input type="range" id="height" min="100" max="250" value="170" oninput="updateSlider('height',' cm','',this.value)">
+        <span class="slider-value" id="height-val">170 cm</span>
+      </div></div>
     </div>
-
     <div class="field">
       <div class="field-label">Weight (kg)</div>
-      <div class="slider-container">
-        <div class="slider-row">
-          <input type="range" id="weight" min="30" max="200" value="75" oninput="updateSlider('weight', ' kg', this.value)">
-          <span class="slider-value" id="weight-val">75 kg</span>
-        </div>
-      </div>
+      <div class="slider-container"><div class="slider-row">
+        <input type="range" id="weight" min="30" max="200" value="75" oninput="updateSlider('weight',' kg','',this.value)">
+        <span class="slider-value" id="weight-val">75 kg</span>
+      </div></div>
     </div>
-
     <div class="field">
       <div class="field-label">Goal Weight (kg)</div>
-      <div class="slider-container">
-        <div class="slider-row">
-          <input type="range" id="goal" min="30" max="200" value="70" oninput="updateSlider('goal', ' kg', this.value)">
-          <span class="slider-value" id="goal-val">70 kg</span>
-        </div>
-      </div>
+      <div class="slider-container"><div class="slider-row">
+        <input type="range" id="goal" min="30" max="200" value="70" oninput="updateSlider('goal',' kg','',this.value)">
+        <span class="slider-value" id="goal-val">70 kg</span>
+      </div></div>
     </div>
   </div>
-
   <div class="section">
     <div class="section-title">Lifestyle</div>
-
     <div class="field">
       <div class="field-label">Activity Level</div>
       <select id="activity" onchange="updateProgress()">
         <option value="">Select...</option>
         <option value="sedentary">Sedentary</option>
         <option value="light">Light</option>
-        <option value="moderate" selected>Moderate</option>
+        <option value="moderate">Moderate</option>
         <option value="active">Active</option>
         <option value="very active">Very Active</option>
       </select>
     </div>
-
     <div class="field">
       <div class="field-label">Diet Type</div>
       <select id="diet" onchange="updateProgress()">
@@ -486,7 +165,6 @@ select {
         <option value="Other">Other</option>
       </select>
     </div>
-
     <div class="field">
       <div class="field-label">Meals Per Day</div>
       <div class="stepper">
@@ -496,7 +174,6 @@ select {
       </div>
       <input type="hidden" id="meals" value="3">
     </div>
-
     <div class="field">
       <div class="toggle-row">
         <div class="field-label">Intermittent Fasting</div>
@@ -517,58 +194,125 @@ select {
       </div>
     </div>
   </div>
-
-</form>
-
+</div>
 <div class="footer">
   <button class="save-btn" id="save-btn" onclick="saveProfile()">Save Profile</button>
 </div>
-
+<div id="log" style="position:fixed;bottom:70px;left:0;right:0;padding:8px 16px;font-size:11px;color:var(--hint);max-height:80px;overflow:auto;z-index:99;"></div>
 <script>
-const tg = window.Telegram.WebApp;
-tg.expand();
-tg.ready();
+function log(msg) {
+  var el = document.getElementById('log');
+  var t = new Date().toLocaleTimeString();
+  el.innerHTML += '[' + t + '] ' + msg + '<br>';
+  console.log('[Profile] ' + msg);
+}
 
-let userData = {};
+var tg = null;
 try {
-  userData = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : {};
-} catch(e) {}
+  log('Script started');
+  log('window.Telegram: ' + (typeof window.Telegram));
+  if (window.Telegram) {
+    log('Telegram.WebApp: ' + (typeof window.Telegram.WebApp));
+    if (window.Telegram.WebApp) {
+      tg = window.Telegram.WebApp;
+      log('TG version: ' + (tg.version || 'unknown'));
+      log('TG platform: ' + (tg.platform || 'unknown'));
+      tg.expand();
+      tg.ready();
+      log('TG initialized OK');
+    }
+  }
+} catch(e) {
+  log('TG init error: ' + e.message);
+}
 
-document.getElementById('name').value = userData.first_name || '';
+var statusEl = document.getElementById('status');
+if (tg) {
+  statusEl.textContent = 'Connected to Telegram ✓';
+  statusEl.style.color = '#34c759';
+} else {
+  statusEl.textContent = 'Not in Telegram WebView ✗';
+  statusEl.style.color = '#ff3b30';
+}
 
-function updateSlider(id, suffix, val) {
+function getParam(name) {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    return params.get(name) || '';
+  } catch(e) { return ''; }
+}
+
+function prefill() {
+  var name = getParam('name');
+  if (name) document.getElementById('name').value = name;
+  var age = getParam('age');
+  if (age) { document.getElementById('age').value = age; updateSlider('age','','',age); }
+  var gender = getParam('gender');
+  if (gender) {
+    var btns = document.querySelectorAll('#gender-group button');
+    for (var i = 0; i < btns.length; i++) {
+      if (btns[i].dataset.value === gender) { selectSegmented(btns[i]); break; }
+    }
+  }
+  var height = getParam('height');
+  if (height) { document.getElementById('height').value = height; updateSlider('height',' cm','',height); }
+  var weight = getParam('weight');
+  if (weight) { document.getElementById('weight').value = weight; updateSlider('weight',' kg','',weight); }
+  var goal = getParam('goal');
+  if (goal) { document.getElementById('goal').value = goal; updateSlider('goal',' kg','',goal); }
+  var activity = getParam('activity');
+  if (activity) document.getElementById('activity').value = activity;
+  var diet = getParam('diet');
+  if (diet) document.getElementById('diet').value = diet;
+  var meals = getParam('meals');
+  if (meals) { document.getElementById('meals').value = meals; document.getElementById('meals-val').textContent = meals; }
+  var fasting = getParam('fasting');
+  if (fasting === '1') {
+    document.getElementById('fasting').checked = true;
+    document.getElementById('fasting-times').classList.add('visible');
+  }
+  var fs = getParam('fasting_start');
+  if (fs) document.getElementById('fasting_start').value = fs;
+  var fe = getParam('fasting_stop');
+  if (fe) document.getElementById('fasting_stop').value = fe;
+  updateProgress();
+  log('Prefilled from URL params');
+}
+
+function updateSlider(id, suffix, _, val) {
   document.getElementById(id + '-val').textContent = val + suffix;
   updateProgress();
 }
 
-function selectSegmented(field, btn) {
-  const group = btn.parentElement;
-  group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+function selectSegmented(btn) {
+  var group = btn.parentElement;
+  var all = group.querySelectorAll('button');
+  for (var i = 0; i < all.length; i++) all[i].classList.remove('active');
   btn.classList.add('active');
-  tg.HapticFeedback.impactOccurred('light');
+  if (tg) try { tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
   updateProgress();
 }
 
 function stepMeals(delta) {
-  const input = document.getElementById('meals');
-  let val = parseInt(input.value) + delta;
+  var input = document.getElementById('meals');
+  var val = parseInt(input.value) + delta;
   if (val < 1) val = 1;
   if (val > 6) val = 6;
   input.value = val;
   document.getElementById('meals-val').textContent = val;
-  tg.HapticFeedback.impactOccurred('light');
+  if (tg) try { tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
   updateProgress();
 }
 
 function toggleFasting(cb) {
   document.getElementById('fasting-times').classList.toggle('visible', cb.checked);
-  tg.HapticFeedback.impactOccurred('medium');
+  if (tg) try { tg.HapticFeedback.impactOccurred('medium'); } catch(e) {}
   updateProgress();
 }
 
-function getProgress() {
-  let filled = 0;
-  const total = 9;
+function updateProgress() {
+  var filled = 0;
+  var total = 9;
   if (document.getElementById('name').value) filled++;
   if (parseInt(document.getElementById('age').value) > 0) filled++;
   if (document.querySelector('#gender-group button.active')) filled++;
@@ -578,40 +322,72 @@ function getProgress() {
   if (document.getElementById('activity').value) filled++;
   if (document.getElementById('diet').value) filled++;
   if (parseInt(document.getElementById('meals').value) > 0) filled++;
-  return Math.round((filled / total) * 100);
-}
-
-function updateProgress() {
-  document.getElementById('progress').style.width = getProgress() + '%';
+  document.getElementById('progress').style.width = Math.round((filled / total) * 100) + '%';
 }
 
 function saveProfile() {
-  const genderBtn = document.querySelector('#gender-group button.active');
-  const data = {
-    name: document.getElementById('name').value,
+  log('Save button clicked');
+  var genderBtn = document.querySelector('#gender-group button.active');
+  var data = {
+    name: document.getElementById('name').value || '',
     age: parseInt(document.getElementById('age').value) || 0,
     gender: genderBtn ? genderBtn.dataset.value : '',
     height: parseInt(document.getElementById('height').value) || 0,
     weight: parseFloat(document.getElementById('weight').value) || 0,
     goal: parseFloat(document.getElementById('goal').value) || 0,
-    activity: document.getElementById('activity').value,
-    diet: document.getElementById('diet').value,
+    activity: document.getElementById('activity').value || '',
+    diet: document.getElementById('diet').value || '',
     meals: parseInt(document.getElementById('meals').value) || 0,
-    fasting: document.getElementById('fasting').checked,
-    fasting_start: document.getElementById('fasting_start').value,
-    fasting_stop: document.getElementById('fasting_stop').value,
+    fasting: document.getElementById('fasting').checked ? 1 : 0,
+    fasting_start: document.getElementById('fasting_start').value || '',
+    fasting_stop: document.getElementById('fasting_stop').value || ''
   };
-
+  log('Data: ' + JSON.stringify(data).substring(0, 80) + '...');
   if (!data.name) {
-    tg.showAlert('Name is required');
+    log('ERROR: No name');
+    if (tg) { try { tg.showAlert('Name is required'); } catch(e) {} }
+    else { alert('Name is required'); }
     return;
   }
-
-  tg.HapticFeedback.notificationOccurred('success');
-  tg.sendData(JSON.stringify(data));
+  var jsonStr = JSON.stringify(data);
+  log('tg object: ' + (tg ? 'exists' : 'null'));
+  log('sendData type: ' + (tg ? typeof tg.sendData : 'N/A'));
+  if (tg && typeof tg.sendData === 'function') {
+    try {
+      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } catch(e) {}
+    try {
+      log('Calling tg.sendData...');
+      tg.sendData(jsonStr);
+      log('sendData called successfully');
+      return;
+    } catch(e) {
+      log('sendData ERROR: ' + e.message);
+      try { tg.close(); } catch(e2) {}
+      return;
+    }
+  }
+  log('Falling back to close');
+  if (tg) {
+    try { tg.close(); } catch(e) {}
+  }
+  showSaved();
 }
 
-updateProgress();
+function showSaved() {
+  var btn = document.getElementById('save-btn');
+  btn.textContent = '✓ Saved!';
+  btn.style.background = '#34c759';
+  setTimeout(function() {
+    btn.textContent = 'Save Profile';
+    btn.style.background = '';
+  }, 2000);
+}
+
+prefill();
+log('Page ready');
 </script>
 </body>
 </html>
+
+
