@@ -198,7 +198,22 @@ select { appearance: none; -webkit-appearance: none; background-image: url("data
 </div>
 <script>
 var tg = null;
-try { tg = window.Telegram.WebApp; tg.expand(); tg.ready(); } catch(e) {}
+try {
+  if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.ready();
+  }
+} catch(e) {}
+if (!tg) {
+  var header = document.querySelector('.header');
+  if (header) {
+    var warn = document.createElement('div');
+    warn.style.cssText = 'background:#ff9500;color:#fff;padding:8px 16px;font-size:13px;text-align:center;';
+    warn.textContent = '⚠️ Open this page from the Telegram bot for full functionality';
+    header.appendChild(warn);
+  }
+}
 
 function getParam(name) {
   try {
@@ -307,17 +322,36 @@ function saveProfile() {
   };
   if (!data.name) {
     if (tg) { try { tg.showAlert('Name is required'); } catch(e) {} }
+    else { alert('Name is required'); }
     return;
   }
   var jsonStr = JSON.stringify(data);
-  if (tg) {
+  if (tg && typeof tg.sendData === 'function') {
     try {
       if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } catch(e) {}
+    try {
       tg.sendData(jsonStr);
+      return;
     } catch(e) {
       try { tg.close(); } catch(e2) {}
+      return;
     }
   }
+  if (tg) {
+    try { tg.close(); } catch(e) {}
+  }
+  showSaved();
+}
+
+function showSaved() {
+  var btn = document.getElementById('save-btn');
+  btn.textContent = '✓ Saved!';
+  btn.style.background = '#34c759';
+  setTimeout(function() {
+    btn.textContent = 'Save Profile';
+    btn.style.background = '';
+  }, 2000);
 }
 
 prefill();
