@@ -150,6 +150,14 @@ async def cmd_sched(message: Message):
     await message.answer(text, reply_markup=schedule_keyboard())
 
 
+# /nudge
+@dp.message(Command("nudge"))
+async def cmd_nudge(message: Message):
+    uid = str(message.from_user.id)
+    resp = await generate_nudge(uid)
+    await message.answer(f"💪 {resp}")
+
+
 # /cancel
 @dp.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
@@ -345,6 +353,7 @@ async def s_del_confirm(callback: CallbackQuery):
 async def set_commands():
     await bot.set_my_commands([
         BotCommand(command="start", description="Profile"),
+        BotCommand(command="nudge", description="Get encouragement"),
         BotCommand(command="schedule", description="Scheduled nudges"),
     ])
 

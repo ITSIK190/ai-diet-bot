@@ -58,7 +58,9 @@ async def generate_response(user_id: str, prompt: str, memory: list = None) -> s
 
         if memory:
             for m in memory[-10:]:
-                messages.append({"role": m["role"], "content": m["content"]})
+                content = m.get("content", "").strip()
+                if content:
+                    messages.append({"role": m["role"], "content": content})
 
         messages.append({"role": "user", "content": prompt})
 
