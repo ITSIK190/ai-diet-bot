@@ -234,8 +234,9 @@ if (tg) {
   log('TG platform: ' + (tg.platform || 'unknown'));
   log('TG close type: ' + typeof tg.close);
   log('TG sendData type: ' + typeof tg.sendData);
-  log('TG initData: ' + (tg.initData || 'none'));
-  log('TG initDataUnsafe keys: ' + (tg.initDataUnsafe ? Object.keys(tg.initDataUnsafe).join(',') : 'none'));
+  if (window.Telegram && window.Telegram.WebApp) {
+    log('Telegram.WebApp.close type: ' + typeof window.Telegram.WebApp.close);
+  }
 } else {
   statusEl.textContent = 'Not in Telegram WebView ✗';
   statusEl.style.color = '#ff3b30';
