@@ -7,6 +7,12 @@ from local_db import get_user
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 MODEL = "openrouter/owl-alpha"
+FALLBACK_MODELS = [
+    "google/gemini-2.0-flash-001",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen-2.5-72b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+]
 
 client = AsyncOpenAI(
     api_key=OPENROUTER_API_KEY,
@@ -51,41 +57,44 @@ def _build_system_prompt(user_data: dict) -> str:
 
 
 async def _call_api(messages: list, max_tokens: int = 200, temperature: float = 0.7) -> str:
+    models_to_try = [MODEL] + FALLBACK_MODELS
     last_error = None
-    for attempt in range(4):
-        try:
-            resp = await client.chat.completions.create(
-                model=MODEL,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
-            content = resp.choices[0].message.content
-            if content:
-                return content.strip()
-            last_error = "Empty response"
-        except RateLimitError:
-            last_error = "rate_limit"
-            await asyncio.sleep(3 * (attempt + 1))
-        except APITimeoutError:
-            last_error = "timeout"
-            await asyncio.sleep(2 * (attempt + 1))
-        except APIConnectionError:
-            last_error = "connection"
-            await asyncio.sleep(2 * (attempt + 1))
-        except APIStatusError as e:
-            if e.status_code == 429:
+
+    for model in models_to_try:
+        for attempt in range(2):
+            try:
+                resp = await client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                )
+                content = resp.choices[0].message.content
+                if content:
+                    return content.strip()
+                last_error = "Empty response"
+            except RateLimitError:
                 last_error = "rate_limit"
-                await asyncio.sleep(3 * (attempt + 1))
-            elif e.status_code >= 500:
-                last_error = "server"
                 await asyncio.sleep(2 * (attempt + 1))
-            else:
-                last_error = f"api_{e.status_code}"
-                break
-        except Exception as e:
-            last_error = str(e)
-            await asyncio.sleep(1)
+            except APITimeoutError:
+                last_error = "timeout"
+                await asyncio.sleep(1)
+            except APIConnectionError:
+                last_error = "connection"
+                await asyncio.sleep(1)
+            except APIStatusError as e:
+                if e.status_code == 429:
+                    last_error = "rate_limit"
+                    await asyncio.sleep(2 * (attempt + 1))
+                elif e.status_code >= 500:
+                    last_error = "server"
+                    await asyncio.sleep(1)
+                else:
+                    last_error = f"api_{e.status_code}"
+                    break
+            except Exception as e:
+                last_error = str(e)
+                await asyncio.sleep(1)
 
     if last_error == "rate_limit":
         return "Sorry, I'm getting a lot of requests right now. Please try again in a minute."
