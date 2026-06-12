@@ -2,8 +2,11 @@ import os
 import datetime
 import asyncio
 import pytz
+from dotenv import load_dotenv
 from openai import AsyncOpenAI, APIStatusError, APIConnectionError, APITimeoutError, RateLimitError
 from local_db import get_user
+
+load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 MODEL = "openrouter/owl-alpha"
